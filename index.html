@@ -38,12 +38,10 @@ form input { flex: 1; margin-right: 5px; }
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Supabase config
 const SUPABASE_URL = 'https://bkcpyunpeyjxzcdgrhcl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// DOM elements
 const joinDiv = document.getElementById('join');
 const chatDiv = document.getElementById('chat');
 const joinBtn = document.getElementById('join-btn');
@@ -56,36 +54,52 @@ const messages = document.getElementById('messages');
 let room = '';
 let username = '';
 let color = '';
-let messageChannel = null;
+let currentSubscription = null;
 
-// Random color for usernames
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
     let c = '#';
-    for (let i=0;i<6;i++) c += letters[Math.floor(Math.random()*16)];
+    for (let i = 0; i < 6; i++) c += letters[Math.floor(Math.random() * 16)];
     return c;
 }
 
-// Subscribe to a room
-function subscribeToRoom(roomCode) {
-    if(messageChannel) {
-        supabase.removeChannel(messageChannel);
+function addMessage({ username, color, message, created_at }) {
+    const li = document.createElement('li');
+    const time = created_at ? new Date(created_at).toLocaleTimeString() : '';
+    li.innerHTML = `<strong style="color:${color}">${username}</strong>: ${message} <span class="timestamp">${time}</span>`;
+    messages.appendChild(li);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function addSystemMessage(msg) {
+    const li = document.createElement('li');
+    li.style.fontStyle = 'italic';
+    li.style.textAlign = 'center';
+    li.style.background = '#444';
+    li.textContent = msg;
+    messages.appendChild(li);
+}
+
+async function subscribeToRoom(roomCode) {
+    if (currentSubscription) {
+        await supabase.removeChannel(currentSubscription);
     }
 
-    messageChannel = supabase.channel('public:messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_code=eq.${roomCode}` }, payload => {
-            addMessage(payload.new);
-        })
+    currentSubscription = supabase.channel('public:messages')
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_code=eq.${roomCode}` },
+            payload => addMessage(payload.new)
+        )
         .subscribe(status => {
-            if(status === 'SUBSCRIBED') console.log('Realtime subscription active for room', roomCode);
+            if (status === 'SUBSCRIBED') console.log(`Subscribed to room ${roomCode}`);
         });
 }
 
-// Join room
 joinBtn.addEventListener('click', async () => {
     const name = usernameInput.value.trim() || 'Anonymous';
     const code = roomInput.value.trim();
-    if(!code) return;
+    if (!code) return;
 
     username = name;
     room = code;
@@ -103,39 +117,21 @@ joinBtn.addEventListener('click', async () => {
         .order('created_at', { ascending: true });
     data.forEach(msg => addMessage(msg));
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time
     subscribeToRoom(room);
 });
 
-// Send message
 form.addEventListener('submit', async e => {
     e.preventDefault();
-    if(!input.value) return;
+    if (!input.value) return;
+
     const message = input.value;
     input.value = '';
+
     await supabase.from('messages').insert([
         { room_code: room, username, color, message }
     ]);
 });
-
-// Display message
-function addMessage({ username, color, message, created_at }) {
-    const li = document.createElement('li');
-    const time = created_at ? new Date(created_at).toLocaleTimeString() : '';
-    li.innerHTML = `<strong style="color:${color}">${username}</strong>: ${message} <span class="timestamp">${time}</span>`;
-    messages.appendChild(li);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-// System message
-function addSystemMessage(msg) {
-    const li = document.createElement('li');
-    li.style.fontStyle = 'italic';
-    li.style.textAlign = 'center';
-    li.style.background = '#444';
-    li.textContent = msg;
-    messages.appendChild(li);
-}
 </script>
 </body>
 </html>
