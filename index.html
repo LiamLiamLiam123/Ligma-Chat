@@ -22,14 +22,39 @@ h1 {
   color:#ff4757;
 }
 
+/* ===== JOIN SCREEN (FIXED) ===== */
 #join {
   flex:1;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
+  gap:10px;
 }
 
+#join input {
+  padding:10px;
+  border:none;
+  border-radius:5px;
+  background:#444;
+  color:#fff;
+  width:260px;
+}
+
+#join button {
+  padding:10px 20px;
+  border:none;
+  border-radius:5px;
+  background:#ff4757;
+  color:#fff;
+  cursor:pointer;
+}
+
+#join button:hover {
+  background:#ff6b81;
+}
+
+/* ===== CHAT ===== */
 #chat {
   display:none;
   flex-direction:column;
@@ -201,14 +226,10 @@ function addMessage(msg) {
   d.className = 'message ' + (msg.username === username ? 'self' : 'other')
   d.innerHTML = `<b>${msg.username}</b>: ${msg.message}`
   messagesDiv.appendChild(d)
-
-  messagesDiv.scrollTo({
-    top: messagesDiv.scrollHeight,
-    behavior:'smooth'
-  })
+  messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior:'smooth' })
 }
 
-/* ===== MESSAGE FETCH (UNCHANGED) ===== */
+/* ===== MESSAGE LOGIC (UNCHANGED) ===== */
 async function fetchNewMessages() {
   let q = supabase.from('messages')
     .select('*')
@@ -257,7 +278,7 @@ supabase.channel('typing-' + room)
     }
   }).subscribe()
 
-/* ===== PRESENCE (ONLINE USERS) ===== */
+/* ===== PRESENCE ===== */
 function setupPresence() {
   presenceChannel = supabase.channel('presence-' + room, {
     config:{ presence:{ key: username } }
