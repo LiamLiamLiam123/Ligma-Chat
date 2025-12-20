@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 <style>
     body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; height: 100vh; margin: 0; }
     h1 { text-align: center; margin: 10px 0; color: #ff4757; }
-    #join, #chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #join, #chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
     #messages { flex: 1; overflow-y: auto; padding: 10px; list-style: none; margin: 0; width: 100%; max-width: 500px; }
     #messages li { padding: 8px 12px; margin-bottom: 6px; background: #2f2f2f; border-radius: 8px; word-break: break-word; }
     input { padding: 10px; border: none; border-radius: 5px; background: #444; color: #fff; margin-bottom: 10px; width: 100%; max-width: 300px; }
@@ -33,6 +33,7 @@ app.get('/', (req, res) => {
 <h1>Ligma Chat 💬</h1>
 
 <div id="join">
+    <input id="username-input" placeholder="Enter your username" />
     <input id="room-input" placeholder="Enter room code" />
     <button id="join-btn">Join Room</button>
 </div>
@@ -52,17 +53,31 @@ app.get('/', (req, res) => {
     const chatDiv = document.getElementById('chat');
     const joinBtn = document.getElementById('join-btn');
     const roomInput = document.getElementById('room-input');
+    const usernameInput = document.getElementById('username-input');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('message-input');
     const messages = document.getElementById('messages');
 
     let room = '';
+    let username = '';
+    const userColors = {};
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
 
     joinBtn.addEventListener('click', () => {
         const code = roomInput.value.trim();
+        const name = usernameInput.value.trim() || 'Anonymous';
         if(code) {
             room = code;
-            socket.emit('join room', room);
+            username = name;
+            socket.emit('join room', { room, username });
             joinDiv.style.display = 'none';
             chatDiv.style.display = 'flex';
         }
@@ -70,16 +85,17 @@ app.get('/', (req, res) => {
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        if(input.value && room) {
-            socket.emit('chat message', { room, message: input.value });
+        if(input.value && room && username) {
+            socket.emit('chat message', { room, username, message: input.value });
             input.value = '';
         }
     });
 
-    socket.on('chat message', ({ room: msgRoom, message }) => {
-        if(msgRoom === room) { // Only show messages from current room
+    socket.on('chat message', ({ room: msgRoom, username: msgUser, message }) => {
+        if(msgRoom === room) {
+            if(!userColors[msgUser]) userColors[msgUser] = getRandomColor();
             const li = document.createElement('li');
-            li.textContent = message;
+            li.innerHTML = '<strong style="color:'+userColors[msgUser]+'">'+msgUser+'</strong>: '+message;
             messages.appendChild(li);
             messages.scrollTop = messages.scrollHeight;
         }
@@ -93,13 +109,13 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     console.log('A user connected to Ligma Chat');
 
-    socket.on('join room', (room) => {
+    socket.on('join room', ({ room, username }) => {
         socket.join(room);
-        console.log(`User joined room: ${room}`);
+        console.log(`User "${username}" joined room: ${room}`);
     });
 
-    socket.on('chat message', ({ room, message }) => {
-        io.to(room).emit('chat message', { room, message });
+    socket.on('chat message', ({ room, username, message }) => {
+        io.to(room).emit('chat message', { room, username, message });
     });
 
     socket.on('disconnect', () => {
