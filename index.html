@@ -61,7 +61,9 @@ let room = '';
 let username = '';
 let color = '';
 let subscription = null;
+let lastFetched = null;
 
+// Random color for user
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
     let c = '#';
@@ -69,15 +71,31 @@ function getRandomColor() {
     return c;
 }
 
+// Add message to chat
 function addMessage({ username: msgUser, color: msgColor, message, created_at }) {
     const div = document.createElement('div');
     div.classList.add('message');
     div.classList.add(msgUser === username ? 'self' : 'other');
-    div.innerHTML = `<strong style="color:${msgColor}">${msgUser}</strong>: ${message} <span class="timestamp">${created_at?new Date(created_at).toLocaleTimeString():""}</span>`;
+    div.innerHTML = `<strong style="color:${msgColor}">${msgUser}</strong>: ${message} <span class="timestamp">${created_at ? new Date(created_at).toLocaleTimeString() : ""}</span>`;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+// Fetch new messages periodically
+async function fetchNewMessages() {
+    let query = supabase.from('messages').select('*').eq('room_code', room).order('created_at', { ascending: true });
+    if(lastFetched) query = query.gt('created_at', lastFetched);
+
+    const { data, error } = await query;
+    if(error) return console.error(error);
+
+    data.forEach(msg => {
+        addMessage(msg);
+        lastFetched = msg.created_at;
+    });
+}
+
+// Subscribe to messages via Supabase Realtime
 async function subscribeToRoom(roomCode) {
     if(subscription) await supabase.removeChannel(subscription);
 
@@ -87,11 +105,12 @@ async function subscribeToRoom(roomCode) {
         }, payload => {
             if(payload.new.username !== username) addMessage(payload.new);
         })
-        .subscribe(async (status) => {
-            if(status === 'SUBSCRIBED') console.log('Subscribed to room', roomCode);
+        .subscribe((status) => {
+            if(status==='SUBSCRIBED') console.log('Realtime active for room', roomCode);
         });
 }
 
+// Join room
 joinBtn.addEventListener('click', async () => {
     username = usernameInput.value.trim() || 'Anonymous';
     room = roomInput.value.trim();
@@ -102,13 +121,19 @@ joinBtn.addEventListener('click', async () => {
     chatDiv.style.display = 'flex';
     roomTitle.textContent = `Room: ${room}`;
 
-    // Load previous messages
-    const { data } = await supabase.from('messages').select('*').eq('room_code', room).order('created_at', {ascending:true});
+    // Load all previous messages
+    const { data } = await supabase.from('messages').select('*').eq('room_code', room).order('created_at', { ascending:true });
     data.forEach(msg => addMessage(msg));
+    if(data.length > 0) lastFetched = data[data.length-1].created_at;
 
+    // Start realtime subscription
     subscribeToRoom(room);
+
+    // Start background polling every 2 seconds
+    setInterval(fetchNewMessages, 2000);
 });
 
+// Send message
 form.addEventListener('submit', async e => {
     e.preventDefault();
     if(!input.value) return;
@@ -116,13 +141,13 @@ form.addEventListener('submit', async e => {
     const messageText = input.value;
     input.value = '';
 
+    // Insert and display immediately
     const { data, error } = await supabase.from('messages').insert([
         { room_code: room, username, color, message: messageText }
     ]).select();
 
     if(error) { console.error(error); return; }
-
-    if(data && data.length > 0) addMessage(data[0]); // show immediately
+    if(data && data.length > 0) addMessage(data[0]);
 });
 </script>
 </body>
