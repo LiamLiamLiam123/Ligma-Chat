@@ -1,18 +1,9 @@
-const express = require('express');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: '*' } });
-
-app.get('/', (req, res) => {
-    res.send(`<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ligma Chat</title>
+<title>Ligma Chat - Supabase</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; height: 100vh; margin: 0; }
 h1 { text-align: center; margin: 10px 0; color: #ff4757; }
@@ -24,6 +15,7 @@ button { padding: 10px 20px; border: none; border-radius: 5px; background: #ff47
 button:hover { background: #ff6b81; }
 form { display: flex; width: 100%; max-width: 500px; }
 form input { flex: 1; margin-right: 5px; }
+.timestamp { font-size: 0.7em; color: #aaa; margin-left: 5px; }
 </style>
 </head>
 <body>
@@ -43,59 +35,78 @@ form input { flex: 1; margin-right: 5px; }
 </form>
 </div>
 
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="sha384-3GbFV6IEg7v2sZK7t2Td+Z+FJ5LQ2S3Jx8CNj0f+JKwR5K3Sx8kmzVJJ0bX4Fn1M" crossorigin="anonymous"></script>
-<script>
-const socket = io();
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const SUPABASE_URL = 'https://bkcpyunpeyjxzcdgrhcl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const joinDiv = document.getElementById('join');
 const chatDiv = document.getElementById('chat');
 const joinBtn = document.getElementById('join-btn');
-const roomInput = document.getElementById('room-input');
 const usernameInput = document.getElementById('username-input');
+const roomInput = document.getElementById('room-input');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('message-input');
 const messages = document.getElementById('messages');
 
 let room = '';
 let username = '';
-const userColors = {};
+let color = '';
 
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
-    return color;
+    let c = '#';
+    for (let i=0;i<6;i++) c += letters[Math.floor(Math.random()*16)];
+    return c;
 }
 
-joinBtn.addEventListener('click', () => {
-    const code = roomInput.value.trim();
+joinBtn.addEventListener('click', async () => {
     const name = usernameInput.value.trim() || 'Anonymous';
-    if(code && name) {
-        room = code;
-        username = name;
-        socket.emit('join room', { room, username });
-        joinDiv.style.display = 'none';
-        chatDiv.style.display = 'flex';
-        addSystemMessage('Joined room: ' + room);
-    }
+    const code = roomInput.value.trim();
+    if(!code) return;
+    username = name;
+    room = code;
+    color = getRandomColor();
+    joinDiv.style.display = 'none';
+    chatDiv.style.display = 'flex';
+    addSystemMessage(`Joined room: ${room}`);
+
+    // Load previous messages
+    const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('room_code', room)
+        .order('created_at', { ascending: true });
+    data.forEach(msg => addMessage(msg));
+
+    // Real-time subscription
+    supabase
+      .from(`messages:room_code=eq.${room}`)
+      .on('INSERT', payload => {
+        addMessage(payload.new);
+      })
+      .subscribe();
 });
 
-form.addEventListener('submit', e => {
+form.addEventListener('submit', async e => {
     e.preventDefault();
-    if(input.value && room && username) {
-        socket.emit('chat message', { room, username, message: input.value });
-        input.value = '';
-    }
+    if(!input.value) return;
+    const message = input.value;
+    input.value = '';
+    await supabase.from('messages').insert([
+        { room_code: room, username, color, message }
+    ]);
 });
 
-socket.on('chat message', ({ room: msgRoom, username: msgUser, message }) => {
-    if(msgRoom === room) {
-        if(!userColors[msgUser]) userColors[msgUser] = getRandomColor();
-        const li = document.createElement('li');
-        li.innerHTML = '<strong style="color:'+userColors[msgUser]+'">'+msgUser+'</strong>: '+message;
-        messages.appendChild(li);
-        messages.scrollTop = messages.scrollHeight;
-    }
-});
+function addMessage({ username, color, message, created_at }) {
+    const li = document.createElement('li');
+    const time = created_at ? new Date(created_at).toLocaleTimeString() : '';
+    li.innerHTML = `<strong style="color:${color}">${username}</strong>: ${message} <span class="timestamp">${time}</span>`;
+    messages.appendChild(li);
+    messages.scrollTop = messages.scrollHeight;
+}
 
 function addSystemMessage(msg) {
     const li = document.createElement('li');
@@ -107,24 +118,4 @@ function addSystemMessage(msg) {
 }
 </script>
 </body>
-</html>`);
-});
-
-// Socket.IO logic with rooms
-io.on('connection', (socket) => {
-    console.log('A user connected');
-
-    socket.on('join room', ({ room, username }) => {
-        socket.join(room);
-        console.log(\`User "\${username}" joined room: \${room}\`);
-    });
-
-    socket.on('chat message', ({ room, username, message }) => {
-        io.to(room).emit('chat message', { room, username, message });
-    });
-
-    socket.on('disconnect', () => console.log('A user disconnected'));
-});
-
-const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => console.log(\`Ligma Chat running on port \${PORT}\`));
+</html>
