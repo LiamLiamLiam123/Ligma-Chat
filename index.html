@@ -73,10 +73,11 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
 )
 
-let username, room, color, subscription, lastFetched=null, typingTimeout, presenceChannel
-let mutedUsers = new Set()
-const ADMIN_NAME = "Admin: Liam"
+let username, room, mutedUsers = new Set()
+let channel, adminChannel, presenceChannel
+let typingTimeout
 
+// --- DOM Elements ---
 const joinDiv = document.getElementById('join')
 const chatDiv = document.getElementById('chat')
 const messagesDiv = document.getElementById('messages')
@@ -88,68 +89,68 @@ const roomTitle = document.getElementById('room-title')
 const messageInput = document.getElementById('message-input')
 const chatForm = document.getElementById('chat-form')
 
-usersBtn.onclick = () => {
-  usersPanel.style.display = usersPanel.style.display === 'none' ? 'block' : 'none'
-}
-
-function randColor(){ return '#' + Math.floor(Math.random()*16777215).toString(16) }
+usersBtn.onclick = ()=> usersPanel.style.display = usersPanel.style.display==='none'?'block':'none'
 
 function systemMsg(text){
   const d = document.createElement('div')
   d.className='system'
-  d.textContent=text
+  d.textContent = text
   messagesDiv.appendChild(d)
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
 function addMessage(msg){
-  const d=document.createElement('div')
+  const d = document.createElement('div')
   d.className='message '+(msg.username===username?'self':'other')
-  d.innerHTML=`<b>${msg.username}</b>: ${msg.message}`
+  d.innerHTML = `<b>${msg.username}</b>: ${msg.message}`
   messagesDiv.appendChild(d)
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-async function fetchNewMessages(){
-  let q = supabase.from('messages').select('*').eq('room_code',room).order('created_at',{ascending:true})
-  if(lastFetched) q = q.gt('created_at',lastFetched)
-  const { data } = await q
-  data.forEach(m => {
-    addMessage(m)
-    lastFetched = m.created_at
+// --- Admin commands ---
+const ADMIN_NAME = "Admin: Liam"
+function setupAdmin(){
+  adminChannel = supabase.channel('admin-'+room)
+
+  adminChannel.on('broadcast',{event:'kick'},({payload})=>{
+    if(payload.target===username){ alert('You were kicked by admin'); location.reload() }
   })
+  adminChannel.on('broadcast',{event:'mute'},({payload})=>{
+    if(payload.target===username){ mutedUsers.add(username); systemMsg('You were muted by admin') }
+  })
+  adminChannel.on('broadcast',{event:'unmute'},({payload})=>{
+    if(payload.target===username){ mutedUsers.delete(username); systemMsg('You were unmuted by admin') }
+  })
+
+  adminChannel.subscribe()
 }
 
-async function subscribeToRoom(r){
-  if(subscription) await supabase.removeChannel(subscription)
-  subscription = supabase.channel('room-'+r)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`room_code=eq.${r}`},p=>{
-      if(p.new.username!==username) addMessage(p.new)
-    })
-    .subscribe()
+function handleCommand(text){
+  if(username!==ADMIN_NAME) return false
+  const [cmd,target] = text.split(' ')
+  if(!target) return true
+
+  if(cmd==='/kick'){ adminChannel.send({type:'broadcast',event:'kick',payload:{target}}); systemMsg(`Admin kicked ${target}`) }
+  if(cmd==='/mute'){ adminChannel.send({type:'broadcast',event:'mute',payload:{target}}); systemMsg(`Admin muted ${target}`) }
+  if(cmd==='/unmute'){ adminChannel.send({type:'broadcast',event:'unmute',payload:{target}}); systemMsg(`Admin unmuted ${target}`) }
+
+  return true
 }
 
+// --- Typing ---
 function sendTyping(){
-  supabase.channel('typing-'+room).send({type:'broadcast',event:'typing',payload:{username}})
+  channel.send({type:'broadcast',event:'typing',payload:{username}})
 }
 
-supabase.channel('typing-'+room)
-  .on('broadcast',{event:'typing'},({payload})=>{
-    if(payload.username!==username){
-      typingDiv.textContent = payload.username+' is typing...'
-      clearTimeout(typingTimeout)
-      typingTimeout = setTimeout(()=>typingDiv.textContent='',1200)
-    }
-  }).subscribe()
-
+// --- Presence / online users ---
 function setupPresence(){
   presenceChannel = supabase.channel('presence-'+room,{config:{presence:{key:username}}})
   presenceChannel.on('presence',{event:'sync'},()=>{
     usersList.innerHTML = ''
     const state = presenceChannel.presenceState()
     Object.keys(state).forEach(u=>{
-      const li=document.createElement('li')
-      li.textContent=u
+      const li = document.createElement('li')
+      li.textContent = u
       usersList.appendChild(li)
     })
   })
@@ -160,37 +161,37 @@ function setupPresence(){
   })
 }
 
-/* ===== ADMIN CHANNEL & COMMANDS ===== */
-let adminChannel
-function setupAdmin(){
-  adminChannel = supabase.channel('admin-'+room)
-  adminChannel.on('broadcast',{event:'kick'},({payload})=>{
-    if(payload.target===username){ alert('You were kicked by admin'); location.reload() }
+// --- Join Room ---
+document.getElementById('join-btn').onclick = ()=>{
+  username = document.getElementById('username-input').value || 'Anon'
+  room = document.getElementById('room-input').value
+  joinDiv.style.display='none'
+  chatDiv.style.display='flex'
+  roomTitle.textContent='Room: '+room
+
+  // --- Setup messaging channel ---
+  channel = supabase.channel('room-'+room)
+  channel.on('broadcast',{event:'message'},({payload})=>{
+    if(payload.username!==username) addMessage(payload)
   })
-  adminChannel.on('broadcast',{event:'mute'},({payload})=>{
-    if(payload.target===username){ mutedUsers.add(username); systemMsg('You were muted by admin') }
+  channel.on('broadcast',{event:'typing'},({payload})=>{
+    if(payload.username!==username){
+      typingDiv.textContent = payload.username+' is typing...'
+      clearTimeout(typingTimeout)
+      typingTimeout = setTimeout(()=>typingDiv.textContent='',1200)
+    }
   })
-  adminChannel.on('broadcast',{event:'unmute'},({payload})=>{
-    if(payload.target===username){ mutedUsers.delete(username); systemMsg('You were unmuted by admin') }
-  })
-  adminChannel.subscribe()
+  channel.subscribe()
+
+  setupPresence()
+  setupAdmin()
 }
 
-function handleCommand(text){
-  if(username!==ADMIN_NAME) return false
-  const [cmd,target]=text.split(' ')
-  if(!target) return true
-  if(cmd==='/kick'){ adminChannel.send({type:'broadcast',event:'kick',payload:{target}}); systemMsg(`Admin kicked ${target}`) }
-  if(cmd==='/mute'){ adminChannel.send({type:'broadcast',event:'mute',payload:{target}}); systemMsg(`Admin muted ${target}`) }
-  if(cmd==='/unmute'){ adminChannel.send({type:'broadcast',event:'unmute',payload:{target}}); systemMsg(`Admin unmuted ${target}`) }
-  return true
-}
-
-/* ===== SEND MESSAGE ===== */
-chatForm.onsubmit = async e=>{
+// --- Send message ---
+chatForm.onsubmit = e=>{
   e.preventDefault()
   const text = messageInput.value
-  messageInput.value = ''
+  messageInput.value=''
 
   if(text.startsWith('/')){
     if(handleCommand(text)) return
@@ -201,29 +202,12 @@ chatForm.onsubmit = async e=>{
     return
   }
 
-  const { data } = await supabase.from('messages').insert([{room_code: room, username, message:text}]).select()
-  addMessage(data[0])
+  // Broadcast the message instantly
+  channel.send({type:'broadcast',event:'message',payload:{username,message:text}})
+  addMessage({username,message:text})
 }
 
-/* ===== JOIN ROOM ===== */
-document.getElementById('join-btn').onclick = async ()=>{
-  username = document.getElementById('username-input').value || 'Anon'
-  room = document.getElementById('room-input').value
-  joinDiv.style.display='none'
-  chatDiv.style.display='flex'
-  roomTitle.textContent='Room: '+room
-
-  const { data } = await supabase.from('messages').select('*').eq('room_code',room).order('created_at',{ascending:true})
-  data.forEach(addMessage)
-  if(data.length) lastFetched = data[data.length-1].created_at
-
-  subscribeToRoom(room)
-  setupPresence()
-  setupAdmin()
-  setInterval(fetchNewMessages,2000)
-}
-
-/* Typing indicator */
+// --- Typing input ---
 messageInput.addEventListener('input', sendTyping)
 </script>
 </body>
