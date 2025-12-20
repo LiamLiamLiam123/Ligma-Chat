@@ -80,8 +80,9 @@ function addSystemMessage(msg) {
     messages.appendChild(li);
 }
 
+// Subscribe to a room for real-time messages
 async function subscribeToRoom(roomCode) {
-    if (currentSubscription) {
+    if(currentSubscription) {
         await supabase.removeChannel(currentSubscription);
     }
 
@@ -92,7 +93,7 @@ async function subscribeToRoom(roomCode) {
             payload => addMessage(payload.new)
         )
         .subscribe(status => {
-            if (status === 'SUBSCRIBED') console.log(`Subscribed to room ${roomCode}`);
+            if(status === 'SUBSCRIBED') console.log(`Subscribed to room ${roomCode}`);
         });
 }
 
@@ -117,7 +118,7 @@ joinBtn.addEventListener('click', async () => {
         .order('created_at', { ascending: true });
     data.forEach(msg => addMessage(msg));
 
-    // Subscribe to real-time
+    // Subscribe to real-time messages
     subscribeToRoom(room);
 });
 
@@ -125,12 +126,22 @@ form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!input.value) return;
 
-    const message = input.value;
+    const messageText = input.value;
     input.value = '';
 
-    await supabase.from('messages').insert([
-        { room_code: room, username, color, message }
-    ]);
+    // Insert message and immediately display it
+    const { data, error } = await supabase.from('messages').insert([
+        { room_code: room, username, color, message: messageText }
+    ]).select(); // important: select() returns inserted row
+
+    if(error) {
+        console.error('Insert error:', error);
+        return;
+    }
+
+    if(data && data.length > 0) {
+        addMessage(data[0]); // display instantly
+    }
 });
 </script>
 </body>
