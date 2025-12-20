@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ligma Chat - Supabase</title>
 <style>
-body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; height: 100vh; margin: 0; display: flex; flex-direction: column; }
 h1 { text-align: center; margin: 10px 0; color: #ff4757; }
-#join, #chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
-#messages { flex: 1; overflow-y: auto; padding: 10px; list-style: none; margin: 0; width: 100%; max-width: 500px; display: flex; flex-direction: column; }
-#messages li { padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; word-break: break-word; max-width: 80%; }
+#join { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#chat { display: none; flex-direction: column; flex: 1; width: 100%; }
+#room-title { text-align: left; padding: 10px 20px; font-size: 1.2em; font-weight: bold; color: #ff4757; }
+#messages { flex: 1; overflow-y: auto; padding: 10px 20px; list-style: none; margin: 0; display: flex; flex-direction: column; }
+#messages li { padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; word-break: break-word; max-width: 70%; }
 #messages li.own { background: #ff4757; color: #fff; align-self: flex-end; }
 #messages li.other { background: #2f2f2f; color: #fff; align-self: flex-start; }
 input { padding: 10px; border: none; border-radius: 5px; background: #444; color: #fff; margin-bottom: 10px; width: 100%; max-width: 300px; }
 button { padding: 10px 20px; border: none; border-radius: 5px; background: #ff4757; color: #fff; cursor: pointer; }
 button:hover { background: #ff6b81; }
-form { display: flex; width: 100%; max-width: 500px; }
+form { display: flex; width: 100%; max-width: 500px; margin: 10px 0; }
 form input { flex: 1; margin-right: 5px; }
 .timestamp { font-size: 0.7em; color: #aaa; margin-left: 5px; }
 </style>
@@ -29,7 +31,8 @@ form input { flex: 1; margin-right: 5px; }
 <button id="join-btn">Join Room</button>
 </div>
 
-<div id="chat" style="display:none; flex-direction: column; flex:1; width:100%; align-items:center;">
+<div id="chat">
+<div id="room-title"></div>
 <ul id="messages"></ul>
 <form id="chat-form">
 <input id="message-input" autocomplete="off" placeholder="Type your message..." />
@@ -40,12 +43,11 @@ form input { flex: 1; margin-right: 5px; }
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Supabase config
 const SUPABASE_URL = 'https://bkcpyunpeyjxzcdgrhcl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// DOM elements
+// Elements
 const joinDiv = document.getElementById('join');
 const chatDiv = document.getElementById('chat');
 const joinBtn = document.getElementById('join-btn');
@@ -54,13 +56,13 @@ const roomInput = document.getElementById('room-input');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('message-input');
 const messages = document.getElementById('messages');
+const roomTitle = document.getElementById('room-title');
 
 let room = '';
 let username = '';
 let color = '';
 let subscription = null;
 
-// Random color for username
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
     let c = '#';
@@ -68,7 +70,6 @@ function getRandomColor() {
     return c;
 }
 
-// Add message to chat
 function addMessage({ username: msgUser, color: msgColor, message, created_at }) {
     const li = document.createElement('li');
     const time = created_at ? new Date(created_at).toLocaleTimeString() : '';
@@ -79,17 +80,15 @@ function addMessage({ username: msgUser, color: msgColor, message, created_at })
     messages.scrollTop = messages.scrollHeight;
 }
 
-// Add system message
 function addSystemMessage(msg) {
     const li = document.createElement('li');
     li.style.fontStyle = 'italic';
-    li.style.textAlign = 'center';
+    li.style.textAlign = 'left';
     li.style.background = '#444';
     li.textContent = msg;
     messages.appendChild(li);
 }
 
-// Subscribe to real-time messages from other users
 async function subscribeToRoom(roomCode) {
     if(subscription) await supabase.removeChannel(subscription);
 
@@ -98,10 +97,7 @@ async function subscribeToRoom(roomCode) {
             'postgres_changes',
             { event:'INSERT', schema:'public', table:'messages', filter:`room_code=eq.${roomCode}` },
             payload => {
-                // Only show messages from other users
-                if(payload.new.username !== username) {
-                    addMessage(payload.new);
-                }
+                if(payload.new.username !== username) addMessage(payload.new);
             }
         )
         .subscribe();
@@ -116,9 +112,9 @@ joinBtn.addEventListener('click', async () => {
 
     joinDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
-    addSystemMessage(`Joined room: ${room}`);
+    roomTitle.textContent = `Room: ${room}`;
+    addSystemMessage(`Joined room`);
 
-    // Load previous messages
     const { data } = await supabase
         .from('messages')
         .select('*')
@@ -126,7 +122,6 @@ joinBtn.addEventListener('click', async () => {
         .order('created_at', { ascending: true });
     data.forEach(msg => addMessage(msg));
 
-    // Subscribe to messages from other users
     subscribeToRoom(room);
 });
 
@@ -138,16 +133,13 @@ form.addEventListener('submit', async e => {
     const messageText = input.value;
     input.value = '';
 
-    // Insert message and show immediately
     const { data, error } = await supabase.from('messages').insert([
         { room_code: room, username, color, message: messageText }
-    ]).select(); // returns inserted row
+    ]).select();
 
     if(error) { console.error(error); return; }
 
-    if(data && data.length > 0) {
-        addMessage(data[0]); // show your own message immediately
-    }
+    if(data && data.length > 0) addMessage(data[0]);
 });
 </script>
 </body>
