@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ligma Chat - Supabase</title>
+<title>Ligma Chat</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; height: 100vh; margin: 0; }
 h1 { text-align: center; margin: 10px 0; color: #ff4757; }
@@ -38,10 +38,12 @@ form input { flex: 1; margin-right: 5px; }
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
+// Supabase config
 const SUPABASE_URL = 'https://bkcpyunpeyjxzcdgrhcl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// DOM elements
 const joinDiv = document.getElementById('join');
 const chatDiv = document.getElementById('chat');
 const joinBtn = document.getElementById('join-btn');
@@ -54,7 +56,9 @@ const messages = document.getElementById('messages');
 let room = '';
 let username = '';
 let color = '';
+let messageSubscription = null;
 
+// Random color for usernames
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
     let c = '#';
@@ -62,13 +66,16 @@ function getRandomColor() {
     return c;
 }
 
+// Join room
 joinBtn.addEventListener('click', async () => {
     const name = usernameInput.value.trim() || 'Anonymous';
     const code = roomInput.value.trim();
     if(!code) return;
+
     username = name;
     room = code;
     color = getRandomColor();
+
     joinDiv.style.display = 'none';
     chatDiv.style.display = 'flex';
     addSystemMessage(`Joined room: ${room}`);
@@ -81,15 +88,21 @@ joinBtn.addEventListener('click', async () => {
         .order('created_at', { ascending: true });
     data.forEach(msg => addMessage(msg));
 
-    // Real-time subscription
-    supabase
-      .from(`messages:room_code=eq.${room}`)
-      .on('INSERT', payload => {
+    // Unsubscribe old subscription if exists
+    if(messageSubscription) {
+        supabase.removeChannel(messageSubscription);
+    }
+
+    // Subscribe to new messages for this room (real-time)
+    messageSubscription = supabase
+      .channel('room-' + room)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_code=eq.${room}` }, payload => {
         addMessage(payload.new);
       })
       .subscribe();
 });
 
+// Send message
 form.addEventListener('submit', async e => {
     e.preventDefault();
     if(!input.value) return;
@@ -100,6 +113,7 @@ form.addEventListener('submit', async e => {
     ]);
 });
 
+// Display message
 function addMessage({ username, color, message, created_at }) {
     const li = document.createElement('li');
     const time = created_at ? new Date(created_at).toLocaleTimeString() : '';
@@ -108,6 +122,7 @@ function addMessage({ username, color, message, created_at }) {
     messages.scrollTop = messages.scrollHeight;
 }
 
+// System message
 function addSystemMessage(msg) {
     const li = document.createElement('li');
     li.style.fontStyle = 'italic';
