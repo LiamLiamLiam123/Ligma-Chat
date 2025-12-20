@@ -70,7 +70,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const supabase = createClient(
   'https://bkcpyunpeyjxzcdgrhcl.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
 )
 
 let username, room, color, subscription, lastFetched=null, typingTimeout, presenceChannel
@@ -201,7 +201,7 @@ chatForm.onsubmit = async e=>{
     return
   }
 
-  const { data } = await supabase.from('messages').insert([{room_code:room,username,message:text}]).select()
+  const { data } = await supabase.from('messages').insert([{room_code: room, username, message:text}]).select()
   addMessage(data[0])
 }
 
