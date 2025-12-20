@@ -56,7 +56,7 @@ const messages = document.getElementById('messages');
 let room = '';
 let username = '';
 let color = '';
-let messageSubscription = null;
+let messageChannel = null;
 
 // Random color for usernames
 function getRandomColor() {
@@ -64,6 +64,21 @@ function getRandomColor() {
     let c = '#';
     for (let i=0;i<6;i++) c += letters[Math.floor(Math.random()*16)];
     return c;
+}
+
+// Subscribe to a room
+function subscribeToRoom(roomCode) {
+    if(messageChannel) {
+        supabase.removeChannel(messageChannel);
+    }
+
+    messageChannel = supabase.channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_code=eq.${roomCode}` }, payload => {
+            addMessage(payload.new);
+        })
+        .subscribe(status => {
+            if(status === 'SUBSCRIBED') console.log('Realtime subscription active for room', roomCode);
+        });
 }
 
 // Join room
@@ -88,18 +103,8 @@ joinBtn.addEventListener('click', async () => {
         .order('created_at', { ascending: true });
     data.forEach(msg => addMessage(msg));
 
-    // Unsubscribe old subscription if exists
-    if(messageSubscription) {
-        supabase.removeChannel(messageSubscription);
-    }
-
-    // Subscribe to new messages for this room (real-time)
-    messageSubscription = supabase
-      .channel('room-' + room)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_code=eq.${room}` }, payload => {
-        addMessage(payload.new);
-      })
-      .subscribe();
+    // Subscribe to real-time updates
+    subscribeToRoom(room);
 });
 
 // Send message
