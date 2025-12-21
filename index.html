@@ -17,7 +17,10 @@ body {
   height:100vh;
 }
 
-h1 { margin:10px 0; color:#ff4757; }
+h1 {
+  margin:10px 0;
+  color:#ff4757;
+}
 
 #join {
   flex:1;
@@ -46,8 +49,6 @@ h1 { margin:10px 0; color:#ff4757; }
   cursor:pointer;
 }
 
-#join button:hover { background:#ff6b81; }
-
 #chat {
   display:none;
   flex-direction:column;
@@ -63,7 +64,10 @@ h1 { margin:10px 0; color:#ff4757; }
   padding:6px 10px;
 }
 
-#room-title { color:#ff4757; font-weight:bold; }
+#room-title {
+  color:#ff4757;
+  font-weight:bold;
+}
 
 #users-btn {
   background:#333;
@@ -83,7 +87,11 @@ h1 { margin:10px 0; color:#ff4757; }
   font-size:0.85em;
 }
 
-#users-panel ul { list-style:none; padding:0; margin:6px 0 0; }
+#users-panel ul {
+  list-style:none;
+  padding:0;
+  margin:6px 0 0;
+}
 
 #messages {
   flex:1;
@@ -101,8 +109,15 @@ h1 { margin:10px 0; color:#ff4757; }
   word-break:break-word;
 }
 
-.self { align-self:flex-end; background:#ff4757; }
-.other { align-self:flex-start; background:#2f2f2f; }
+.self {
+  align-self:flex-end;
+  background:#ff4757;
+}
+
+.other {
+  align-self:flex-start;
+  background:#2f2f2f;
+}
 
 #typing {
   height:18px;
@@ -171,16 +186,15 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const supabase = createClient(
   'https://bkcpyunpeyjxzcdgrhcl.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
 )
 
-/* ===== STATE ===== */
 let room, username, color
-let channel, typingTimeout, presenceChannel
-let mutedUsers = new Set()
-let adminChannel
+let subscription
+let lastFetched = null
+let typingTimeout
+let presenceChannel
 
-/* ===== ELEMENTS ===== */
 const joinDiv = document.getElementById('join')
 const chatDiv = document.getElementById('chat')
 const messagesDiv = document.getElementById('messages')
@@ -194,19 +208,71 @@ usersBtn.onclick = () => {
     usersPanel.style.display === 'none' ? 'block' : 'none'
 }
 
-/* ===== HELPERS ===== */
-function randColor() { return '#' + Math.floor(Math.random()*16777215).toString(16) }
+function randColor() {
+  return '#' + Math.floor(Math.random()*16777215).toString(16)
+}
 
 function addMessage(msg) {
   const d = document.createElement('div')
   d.className = 'message ' + (msg.username === username ? 'self' : 'other')
   d.innerHTML = `<b>${msg.username}</b>: ${msg.message}`
   messagesDiv.appendChild(d)
-  messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior:'smooth' })
+  messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-/* ===== JOIN ===== */
-document.getElementById('join-btn').onclick = () => {
+async function fetchNewMessages() {
+  let q = supabase.from('messages')
+    .select('*')
+    .eq('room_code', room)
+    .order('created_at', { ascending:true })
+
+  if(lastFetched) q = q.gt('created_at', lastFetched)
+
+  const { data } = await q
+  data.forEach(m => {
+    addMessage(m)
+    lastFetched = m.created_at
+  })
+}
+
+async function subscribeToRoom(r) {
+  if(subscription) await supabase.removeChannel(subscription)
+
+  subscription = supabase.channel('room-' + r)
+    .on('postgres_changes', {
+      event:'INSERT',
+      schema:'public',
+      table:'messages',
+      filter:`room_code=eq.${r}`
+    }, p => {
+      if(p.new.username !== username) addMessage(p.new)
+    })
+    .subscribe()
+}
+
+function setupPresence() {
+  presenceChannel = supabase.channel('presence-' + room, {
+    config:{ presence:{ key: username } }
+  })
+
+  presenceChannel.on('presence', { event:'sync' }, () => {
+    usersList.innerHTML = ''
+    const state = presenceChannel.presenceState()
+    Object.keys(state).forEach(u => {
+      const li = document.createElement('li')
+      li.textContent = u
+      usersList.appendChild(li)
+    })
+  })
+
+  presenceChannel.subscribe(async status => {
+    if(status === 'SUBSCRIBED') {
+      await presenceChannel.track({ username })
+    }
+  })
+}
+
+document.getElementById('join-btn').onclick = async () => {
   username = document.getElementById('username-input').value || 'Anon'
   room = document.getElementById('room-input').value
   color = randColor()
@@ -215,98 +281,32 @@ document.getElementById('join-btn').onclick = () => {
   chatDiv.style.display='flex'
   document.getElementById('room-title').textContent = 'Room: ' + room
 
-  // --- Main channel for messages & typing ---
-  channel = supabase.channel('room-'+room)
-  
-  // Receive messages
-  channel.on('broadcast',{event:'message'},({payload})=>{
-    addMessage(payload)
-  })
+  const { data } = await supabase.from('messages')
+    .select('*')
+    .eq('room_code', room)
+    .order('created_at', { ascending:true })
 
-  // Typing indicator
-  channel.on('broadcast',{event:'typing'},({payload})=>{
-    if(payload.username!==username){
-      typingDiv.textContent = payload.username+' is typing...'
-      clearTimeout(typingTimeout)
-      typingTimeout = setTimeout(()=>typingDiv.textContent='',1200)
-    }
-  })
+  data.forEach(addMessage)
+  if(data.length) lastFetched = data[data.length-1].created_at
 
-  channel.subscribe()
-
+  subscribeToRoom(room)
   setupPresence()
-  setupAdmin()
+  setInterval(fetchNewMessages, 2000)
 }
 
-/* ===== TYPING ===== */
-function sendTyping() {
-  if(channel) channel.send({type:'broadcast',event:'typing',payload:{username}})
-}
-
-document.getElementById('message-input').addEventListener('input', sendTyping)
-
-/* ===== PRESENCE ===== */
-function setupPresence() {
-  presenceChannel = supabase.channel('presence-'+room,{config:{presence:{key:username}}})
-  presenceChannel.on('presence',{event:'sync'},()=>{
-    usersList.innerHTML=''
-    const state = presenceChannel.presenceState()
-    Object.keys(state).forEach(u=>{
-      const li=document.createElement('li')
-      li.textContent=u
-      usersList.appendChild(li)
-    })
-  })
-  presenceChannel.subscribe(async status=>{
-    if(status==='SUBSCRIBED') await presenceChannel.track({username})
-  })
-}
-
-/* ===== ADMIN ===== */
-const ADMIN_NAME = "Admin: Liam"
-function setupAdmin(){
-  adminChannel = supabase.channel('admin-'+room)
-  adminChannel.on('broadcast',{event:'kick'},({payload})=>{
-    if(payload.target===username){ alert('You were kicked'); location.reload() }
-  })
-  adminChannel.on('broadcast',{event:'mute'},({payload})=>{
-    if(payload.target===username){ mutedUsers.add(username); addMessage({username:'System',message:'You were muted'}) }
-  })
-  adminChannel.on('broadcast',{event:'unmute'},({payload})=>{
-    if(payload.target===username){ mutedUsers.delete(username); addMessage({username:'System',message:'You were unmuted'}) }
-  })
-  adminChannel.subscribe()
-}
-
-function handleCommand(text){
-  if(username!==ADMIN_NAME) return false
-  const [cmd,target] = text.split(' ')
-  if(!target) return true
-  if(cmd==='/kick'){ adminChannel.send({type:'broadcast',event:'kick',payload:{target}}); addMessage({username:'System',message:`Admin kicked ${target}`}) }
-  if(cmd==='/mute'){ adminChannel.send({type:'broadcast',event:'mute',payload:{target}}); addMessage({username:'System',message:`Admin muted ${target}`}) }
-  if(cmd==='/unmute'){ adminChannel.send({type:'broadcast',event:'unmute',payload:{target}}); addMessage({username:'System',message:`Admin unmuted ${target}`}) }
-  return true
-}
-
-/* ===== SEND MESSAGE ===== */
-document.getElementById('chat-form').onsubmit = e=>{
+document.getElementById('chat-form').onsubmit = async e => {
   e.preventDefault()
   const text = e.target[0].value
   e.target[0].value=''
 
-  if(text.startsWith('/')){
-    if(handleCommand(text)) return
-  }
+  const { data } = await supabase.from('messages').insert([{
+    room_code:room,
+    username,
+    color,
+    message:text
+  }]).select()
 
-  if(mutedUsers.has(username)){
-    addMessage({username:'System',message:'You are muted'})
-    return
-  }
-
-  if(channel){
-    channel.send({type:'broadcast',event:'message',payload:{username,message:text}})
-    addMessage({username,message:text})
-  }
+  addMessage(data[0])
 }
 </script>
 </body>
