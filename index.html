@@ -16,7 +16,6 @@ body {
   align-items:center;
   height:100vh;
 }
-
 h1 { margin:10px 0; color:#ff4757; }
 
 #join {
@@ -171,7 +170,7 @@ const supabase = createClient(
 const ADMIN_NAME = "Admin:Liam"
 
 let room, username
-let channel, adminChannel, presenceChannel
+let channel, presenceChannel
 let muted = new Set()
 let typingTimeout
 
@@ -211,80 +210,62 @@ document.getElementById('join-btn').onclick = async () => {
   document.getElementById('chat').style.display = 'flex'
   document.getElementById('room-title').textContent = 'Room: ' + room
 
-  /* MAIN CHANNEL */
   channel = supabase.channel('room-' + room)
 
   channel.on('broadcast', { event:'message' }, ({ payload }) => {
-    if (payload.username !== username) {
-      addMessage(payload, 'other')
-    }
+    if (payload.username !== username) addMessage(payload,'other')
   })
 
   channel.on('broadcast', { event:'typing' }, ({ payload }) => {
     if (payload.username !== username) {
       typingDiv.textContent = payload.username + ' is typing...'
       clearTimeout(typingTimeout)
-      typingTimeout = setTimeout(() => typingDiv.textContent = '', 1200)
+      typingTimeout = setTimeout(() => typingDiv.textContent='',1200)
     }
   })
 
-  channel.subscribe()
-
-  /* ADMIN CHANNEL */
-  adminChannel = supabase.channel('admin-' + room)
-
-  adminChannel.on('broadcast', { event:'kick' }, ({ payload }) => {
+  /* ADMIN EVENTS */
+  channel.on('broadcast', { event:'kick' }, ({ payload }) => {
     if (payload.target === username) {
       alert('You were kicked by Admin')
       location.reload()
     }
   })
 
-  adminChannel.on('broadcast', { event:'mute' }, ({ payload }) => {
+  channel.on('broadcast', { event:'mute' }, ({ payload }) => {
     if (payload.target === username) {
       muted.add(username)
       addSystem('You were muted')
     }
   })
 
-  adminChannel.on('broadcast', { event:'unmute' }, ({ payload }) => {
+  channel.on('broadcast', { event:'unmute' }, ({ payload }) => {
     if (payload.target === username) {
       muted.delete(username)
       addSystem('You were unmuted')
     }
   })
 
-  adminChannel.subscribe()
+  channel.subscribe()
 
   /* PRESENCE */
-  presenceChannel = supabase.channel('presence-' + room, {
-    config: { presence: { key: username } }
-  })
-
-  presenceChannel.on('presence', { event:'sync' }, () => {
-    usersList.innerHTML = ''
-    const state = presenceChannel.presenceState()
-    Object.keys(state).forEach(u => {
-      const li = document.createElement('li')
-      li.textContent = u
+  presenceChannel = supabase.channel('presence-' + room,{config:{presence:{key:username}}})
+  presenceChannel.on('presence',{event:'sync'},()=>{
+    usersList.innerHTML=''
+    Object.keys(presenceChannel.presenceState()).forEach(u=>{
+      const li=document.createElement('li')
+      li.textContent=u
       usersList.appendChild(li)
     })
   })
-
-  presenceChannel.subscribe(async status => {
-    if (status === 'SUBSCRIBED') {
-      await presenceChannel.track({ username })
-    }
+  presenceChannel.subscribe(async s=>{
+    if(s==='SUBSCRIBED') await presenceChannel.track({username})
   })
 }
 
 /* ===== TYPING ===== */
-document.getElementById('message-input').addEventListener('input', () => {
-  channel.send({
-    type:'broadcast',
-    event:'typing',
-    payload:{ username }
-  })
+document.getElementById('message-input').addEventListener('input',()=>{
+  channel.send({type:'broadcast',event:'typing',payload:{username}})
 })
 
 /* ===== SEND ===== */
@@ -294,50 +275,19 @@ document.getElementById('chat-form').onsubmit = e => {
   const text = input.value.trim()
   input.value = ''
 
-  // ADMIN COMMANDS
   if (text.startsWith('/') && username === ADMIN_NAME) {
-    const parts = text.split(' ')
-    const cmd = parts[0]
-    const target = parts.slice(1).join(' ')
+    const [cmd, ...rest] = text.split(' ')
+    const target = rest.join(' ')
+    if (!target) return addSystem('No target specified')
 
-    if (!target) {
-      addSystem('No target specified')
-      return
-    }
-
-    if (cmd === '/kick') {
-      adminChannel.send({ type:'broadcast', event:'kick', payload:{ target } })
-      addSystem(`Admin kicked ${target}`)
-      return
-    }
-
-    if (cmd === '/mute') {
-      adminChannel.send({ type:'broadcast', event:'mute', payload:{ target } })
-      addSystem(`Admin muted ${target}`)
-      return
-    }
-
-    if (cmd === '/unmute') {
-      adminChannel.send({ type:'broadcast', event:'unmute', payload:{ target } })
-      addSystem(`Admin unmuted ${target}`)
-      return
-    }
-
-    addSystem('Unknown admin command')
+    channel.send({ type:'broadcast', event:cmd.slice(1), payload:{ target } })
+    addSystem(`Admin used ${cmd} on ${target}`)
     return
   }
 
-  if (muted.has(username)) {
-    addSystem('You are muted')
-    return
-  }
+  if (muted.has(username)) return addSystem('You are muted')
 
-  channel.send({
-    type:'broadcast',
-    event:'message',
-    payload:{ username, message:text }
-  })
-
+  channel.send({ type:'broadcast', event:'message', payload:{ username, message:text } })
   addMessage({ username, message:text }, 'self')
 }
 </script>
