@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ligma Chat</title>
-
 <style>
 body {
   margin:0;
@@ -45,6 +44,16 @@ h1 { margin:10px 0; color:#ff4757; }
   cursor:pointer;
 }
 
+#status-bar {
+  font-size:0.8em;
+  padding:4px 10px;
+  border-radius:4px;
+  margin-top:4px;
+}
+.status-ok { background:#1e5c2e; color:#7dffaa; }
+.status-err { background:#5c1e1e; color:#ff7d7d; }
+.status-wait { background:#3d3d1e; color:#ffd97d; }
+
 #chat {
   display:none;
   flex-direction:column;
@@ -78,6 +87,8 @@ h1 { margin:10px 0; color:#ff4757; }
   font-size:0.85em;
 }
 
+#users-panel ul { margin:4px 0; padding-left:16px; }
+
 #messages {
   flex:1;
   overflow-y:auto;
@@ -96,7 +107,7 @@ h1 { margin:10px 0; color:#ff4757; }
 
 .self { align-self:flex-end; background:#ff4757; }
 .other { align-self:flex-start; background:#2f2f2f; }
-.system { align-self:center; background:#444; font-size:0.85em; }
+.system { align-self:center; background:#444; font-size:0.85em; color:#ccc; }
 
 #typing {
   height:18px;
@@ -119,6 +130,8 @@ form input {
   color:#fff;
 }
 
+form input:disabled { opacity:0.5; cursor:not-allowed; }
+
 form button {
   margin-left:6px;
   padding:10px 16px;
@@ -126,7 +139,10 @@ form button {
   border-radius:5px;
   background:#ff4757;
   color:#fff;
+  cursor:pointer;
 }
+
+form button:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 </head>
 
@@ -137,12 +153,16 @@ form button {
   <input id="username-input" placeholder="Username">
   <input id="room-input" placeholder="Room code">
   <button id="join-btn">Join</button>
+  <div id="status-bar" style="display:none"></div>
 </div>
 
 <div id="chat">
   <div class="top-bar">
     <div id="room-title"></div>
-    <button id="users-btn">👥</button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <div id="conn-dot" title="Connecting..." style="width:10px;height:10px;border-radius:50%;background:#ffd97d;"></div>
+      <button id="users-btn">👥</button>
+    </div>
   </div>
 
   <div id="users-panel">
@@ -154,41 +174,52 @@ form button {
   <div id="typing"></div>
 
   <form id="chat-form">
-    <input id="message-input" autocomplete="off" placeholder="Message">
-    <button>Send</button>
+    <input id="message-input" autocomplete="off" placeholder="Message" disabled>
+    <button id="send-btn" disabled>Send</button>
   </form>
 </div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-const supabase = createClient(
-  'https://bkcpyunpeyjxzcdgrhcl.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
-)
+const SUPABASE_URL = 'https://bkcpyunpeyjxzcdgrhcl.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrY3B5dW5wZXlqeHpjZGdyaGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMDE2NzcsImV4cCI6MjA4MTc3NzY3N30.BBpncWn_U4zR40iTEDiypT7zFzhFx_VjjefxXVhOEyI'
+const ADMIN_NAME = 'Admin:Liam'
 
-const ADMIN_NAME = "Admin:Liam"
-
-let room, username
+let supabase, room, username
 let channel, presenceChannel
 let muted = new Set()
 let typingTimeout
+let connected = false
 
 const messagesDiv = document.getElementById('messages')
-const typingDiv = document.getElementById('typing')
-const usersBtn = document.getElementById('users-btn')
-const usersPanel = document.getElementById('users-panel')
-const usersList = document.getElementById('users-list')
+const typingDiv   = document.getElementById('typing')
+const usersBtn    = document.getElementById('users-btn')
+const usersPanel  = document.getElementById('users-panel')
+const usersList   = document.getElementById('users-list')
+const connDot     = document.getElementById('conn-dot')
+const msgInput    = document.getElementById('message-input')
+const sendBtn     = document.getElementById('send-btn')
 
 usersBtn.onclick = () => {
-  usersPanel.style.display =
-    usersPanel.style.display === 'none' ? 'block' : 'none'
+  usersPanel.style.display = usersPanel.style.display === 'none' ? 'block' : 'none'
+}
+
+function setConnected(ok) {
+  connected = ok
+  connDot.style.background = ok ? '#7dffaa' : '#ff7d7d'
+  connDot.title = ok ? 'Connected' : 'Disconnected'
+  msgInput.disabled = !ok
+  sendBtn.disabled  = !ok
 }
 
 function addMessage(msg, cls) {
   const d = document.createElement('div')
   d.className = 'message ' + cls
-  d.innerHTML = `<b>${msg.username}</b>: ${msg.message}`
+  // Escape HTML to prevent injection
+  const safe = msg.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const user = msg.username.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  d.innerHTML = `<b>${user}</b>: ${safe}`
   messagesDiv.appendChild(d)
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
@@ -203,92 +234,156 @@ function addSystem(text) {
 
 /* ===== JOIN ===== */
 document.getElementById('join-btn').onclick = async () => {
-  username = document.getElementById('username-input').value || 'Anon'
-  room = document.getElementById('room-input').value
+  const uInput = document.getElementById('username-input')
+  const rInput = document.getElementById('room-input')
+  const statusBar = document.getElementById('status-bar')
+
+  username = uInput.value.trim() || 'Anon'
+  room = rInput.value.trim()
+
+  if (!room) {
+    statusBar.style.display = 'block'
+    statusBar.className = 'status-err'
+    statusBar.textContent = 'Please enter a room code.'
+    return
+  }
+
+  statusBar.style.display = 'block'
+  statusBar.className = 'status-wait'
+  statusBar.textContent = 'Connecting...'
+
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  } catch (err) {
+    statusBar.className = 'status-err'
+    statusBar.textContent = 'Failed to initialise Supabase: ' + err.message
+    return
+  }
 
   document.getElementById('join').style.display = 'none'
   document.getElementById('chat').style.display = 'flex'
   document.getElementById('room-title').textContent = 'Room: ' + room
 
+  /* ---- Broadcast channel ---- */
   channel = supabase.channel('room-' + room)
 
-  channel.on('broadcast', { event:'message' }, ({ payload }) => {
-    if (payload.username !== username) addMessage(payload,'other')
+  channel.on('broadcast', { event: 'message' }, ({ payload }) => {
+    if (payload.username !== username) addMessage(payload, 'other')
   })
 
-  channel.on('broadcast', { event:'typing' }, ({ payload }) => {
+  channel.on('broadcast', { event: 'typing' }, ({ payload }) => {
     if (payload.username !== username) {
       typingDiv.textContent = payload.username + ' is typing...'
       clearTimeout(typingTimeout)
-      typingTimeout = setTimeout(() => typingDiv.textContent='',1200)
+      typingTimeout = setTimeout(() => typingDiv.textContent = '', 1200)
     }
   })
 
-  /* ADMIN EVENTS */
-  channel.on('broadcast', { event:'kick' }, ({ payload }) => {
+  channel.on('broadcast', { event: 'kick' }, ({ payload }) => {
     if (payload.target === username) {
       alert('You were kicked by Admin')
       location.reload()
     }
   })
 
-  channel.on('broadcast', { event:'mute' }, ({ payload }) => {
+  channel.on('broadcast', { event: 'mute' }, ({ payload }) => {
     if (payload.target === username) {
       muted.add(username)
       addSystem('You were muted')
     }
   })
 
-  channel.on('broadcast', { event:'unmute' }, ({ payload }) => {
+  channel.on('broadcast', { event: 'unmute' }, ({ payload }) => {
     if (payload.target === username) {
       muted.delete(username)
       addSystem('You were unmuted')
     }
   })
 
-  channel.subscribe()
+  channel
+    .subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') {
+        setConnected(true)
+        addSystem('Joined room "' + room + '" as ' + username)
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setConnected(false)
+        addSystem('Connection lost (' + status + '). Trying to reconnect...')
+      }
+      if (err) {
+        addSystem('Channel error: ' + err.message)
+      }
+    })
 
-  /* PRESENCE */
-  presenceChannel = supabase.channel('presence-' + room,{config:{presence:{key:username}}})
-  presenceChannel.on('presence',{event:'sync'},()=>{
-    usersList.innerHTML=''
-    Object.keys(presenceChannel.presenceState()).forEach(u=>{
-      const li=document.createElement('li')
-      li.textContent=u
+  /* ---- Presence channel ---- */
+  presenceChannel = supabase.channel('presence-' + room, {
+    config: { presence: { key: username } }
+  })
+
+  presenceChannel.on('presence', { event: 'sync' }, () => {
+    const state = presenceChannel.presenceState()
+    usersList.innerHTML = ''
+    // presenceState keys are the presence keys (usernames)
+    Object.entries(state).forEach(([key, presences]) => {
+      const li = document.createElement('li')
+      // key is the presence key; presences is an array of tracked objects
+      li.textContent = presences[0]?.username || key
       usersList.appendChild(li)
     })
   })
-  presenceChannel.subscribe(async s=>{
-    if(s==='SUBSCRIBED') await presenceChannel.track({username})
+
+  presenceChannel.on('presence', { event: 'join' }, ({ key }) => {
+    if (key !== username) addSystem(key + ' joined the room')
+  })
+
+  presenceChannel.on('presence', { event: 'leave' }, ({ key }) => {
+    addSystem(key + ' left the room')
+  })
+
+  presenceChannel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await presenceChannel.track({ username })
+    }
   })
 }
 
 /* ===== TYPING ===== */
-document.getElementById('message-input').addEventListener('input',()=>{
-  channel.send({type:'broadcast',event:'typing',payload:{username}})
+msgInput.addEventListener('input', () => {
+  if (!connected) return
+  channel.send({ type: 'broadcast', event: 'typing', payload: { username } })
 })
 
 /* ===== SEND ===== */
-document.getElementById('chat-form').onsubmit = e => {
+document.getElementById('chat-form').onsubmit = async (e) => {
   e.preventDefault()
-  const input = e.target[0]
-  const text = input.value.trim()
-  input.value = ''
+  if (!connected) return addSystem('Not connected — message not sent.')
 
+  const text = msgInput.value.trim()
+  msgInput.value = ''
+  if (!text) return
+
+  // Admin commands
   if (text.startsWith('/') && username === ADMIN_NAME) {
     const [cmd, ...rest] = text.split(' ')
     const target = rest.join(' ')
     if (!target) return addSystem('No target specified')
-
-    channel.send({ type:'broadcast', event:cmd.slice(1), payload:{ target } })
+    await channel.send({ type: 'broadcast', event: cmd.slice(1), payload: { target } })
     addSystem(`Admin used ${cmd} on ${target}`)
     return
   }
 
   if (muted.has(username)) return addSystem('You are muted')
 
-  channel.send({ type:'broadcast', event:'message', payload:{ username, message:text } })
-  addMessage({ username, message:text }, 'self')
+  const { error } = await channel.send({
+    type: 'broadcast',
+    event: 'message',
+    payload: { username, message: text }
+  })
+
+  if (error) {
+    addSystem('Send failed: ' + error.message)
+  } else {
+    addMessage({ username, message: text }, 'self')
+  }
 }
 </script>
 </body>
