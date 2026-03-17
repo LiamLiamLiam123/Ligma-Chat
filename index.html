@@ -54,6 +54,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   max-width: 540px;
   flex: 1;
   min-height: 0;
+  position: relative;
 }
 .top-bar {
   display: flex;
@@ -62,8 +63,9 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   padding: 6px 12px;
   flex-shrink: 0;
   border-bottom: 1px solid #2a2a2a;
+  gap: 8px;
 }
-#room-title { font-weight: bold; font-size: 0.95em; color: #ccc; }
+#room-title { font-weight: bold; font-size: 0.95em; color: #ccc; flex: 1; }
 #conn-pill {
   font-size: 0.72em;
   padding: 2px 10px;
@@ -74,13 +76,62 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #conn-pill.ok  { color: #7dffaa; }
 #conn-pill.err { color: #ff7d7d; }
 
-#users-bar {
-  font-size: 0.75em;
-  color: #777;
-  padding: 3px 12px;
-  flex-shrink: 0;
-  min-height: 20px;
+#users-btn {
+  background: #333;
+  border: none;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
 }
+#users-btn:hover { background: #444; }
+
+/* Users panel dropdown */
+#users-panel {
+  display: none;
+  position: absolute;
+  top: 42px;
+  right: 12px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+#users-panel.open { display: block; }
+#users-panel h3 {
+  font-size: 0.8em;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+#users-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#users-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+#users-list li .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7dffaa;
+  flex-shrink: 0;
+}
+#users-list li .uname { color: #ddd; }
+#users-list li .you { font-size: 0.75em; color: #666; }
+
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -99,9 +150,10 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   line-height: 1.4;
 }
 .msg .name { font-weight: bold; font-size: 0.78em; margin-bottom: 2px; opacity: 0.8; }
-.self  { align-self: flex-end;   background: #ff4757; border-bottom-right-radius: 3px; }
-.other { align-self: flex-start; background: #2f2f2f; border-bottom-left-radius: 3px; }
-.sys   { align-self: center; color: #555; font-size: 0.78em; font-style: italic; background: transparent; }
+.self   { align-self: flex-end;   background: #ff4757; border-bottom-right-radius: 3px; }
+.other  { align-self: flex-start; background: #2f2f2f; border-bottom-left-radius: 3px; }
+.sys    { align-self: center; color: #555; font-size: 0.78em; font-style: italic; background: transparent; }
+.admin  { align-self: center; color: #ffd97d; font-size: 0.78em; font-style: italic; background: transparent; }
 
 #typing {
   height: 18px;
@@ -156,8 +208,15 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   <div class="top-bar">
     <div id="room-title"></div>
     <div id="conn-pill">connecting…</div>
+    <button id="users-btn">👥 Users <span id="user-count"></span></button>
   </div>
-  <div id="users-bar"></div>
+
+  <!-- Users dropdown panel -->
+  <div id="users-panel">
+    <h3>Online now</h3>
+    <ul id="users-list"></ul>
+  </div>
+
   <div id="messages"></div>
   <div id="typing"></div>
   <div id="input-row">
@@ -167,12 +226,14 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 </div>
 
 <script>
-const FB = 'https://ligma--chat-default-rtdb.firebaseio.com'
+const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
+const ADMIN_NAME = 'Admin:Liam'
 
 let username, room
-let msgListener = null
-let typingTimer
-let presenceTimer
+let muted = false
+let msgListener, cmdListener, typingListener
+let typingTimer, presenceTimer
+let onlineUsers = {}
 
 const joinDiv     = document.getElementById('join')
 const chatDiv     = document.getElementById('chat')
@@ -182,48 +243,50 @@ const joinBtn     = document.getElementById('join-btn')
 const joinErr     = document.getElementById('join-err')
 const roomTitle   = document.getElementById('room-title')
 const connPill    = document.getElementById('conn-pill')
-const usersBar    = document.getElementById('users-bar')
+const usersBtn    = document.getElementById('users-btn')
+const usersPanel  = document.getElementById('users-panel')
+const usersList   = document.getElementById('users-list')
+const userCount   = document.getElementById('user-count')
 const messagesDiv = document.getElementById('messages')
 const typingDiv   = document.getElementById('typing')
 const msgInput    = document.getElementById('msg-input')
 const sendBtn     = document.getElementById('send-btn')
 
-// ── Firebase REST helpers ──
-const fb = (path) => `${FB}/${path}.json`
+// Toggle users panel
+usersBtn.onclick = () => usersPanel.classList.toggle('open')
 
-async function fbPost(path, data) {
-  const r = await fetch(fb(path), { method: 'POST', body: JSON.stringify(data) })
-  return r.json()
-}
-async function fbSet(path, data) {
-  await fetch(fb(path), { method: 'PUT', body: JSON.stringify(data) })
-}
-async function fbDel(path) {
-  await fetch(fb(path), { method: 'DELETE' })
-}
-async function fbGet(path) {
-  const r = await fetch(fb(path))
-  return r.json()
-}
+// Close panel if clicking outside
+document.addEventListener('click', e => {
+  if (!usersPanel.contains(e.target) && e.target !== usersBtn) {
+    usersPanel.classList.remove('open')
+  }
+})
 
-// ── SSE real-time listener ──
+// ── Firebase REST ──
+const fb     = p => `${FB}/${p}.json`
+const fbPost = (p, d) => fetch(fb(p), { method: 'POST',   body: JSON.stringify(d) }).then(r => r.json())
+const fbSet  = (p, d) => fetch(fb(p), { method: 'PUT',    body: JSON.stringify(d) })
+const fbDel  = p      => fetch(fb(p), { method: 'DELETE' })
+const fbGet  = p      => fetch(fb(p)).then(r => r.json())
+
+// ── SSE ──
 function fbListen(path, cb) {
   const es = new EventSource(fb(path))
   es.addEventListener('put',   e => { try { cb(JSON.parse(e.data)) } catch {} })
   es.addEventListener('patch', e => { try { cb(JSON.parse(e.data)) } catch {} })
-  es.onopen  = () => { connPill.textContent = 'connected'; connPill.className = 'ok'; msgInput.disabled = false; sendBtn.disabled = false }
-  es.onerror = () => { connPill.textContent = 'reconnecting…'; connPill.className = 'err'; msgInput.disabled = true; sendBtn.disabled = true }
+  es.onopen  = () => { connPill.textContent = 'connected';     connPill.className = 'ok';  msgInput.disabled = false; sendBtn.disabled = false }
+  es.onerror = () => { connPill.textContent = 'reconnecting…'; connPill.className = 'err'; msgInput.disabled = true;  sendBtn.disabled = true  }
   return es
 }
 
-// ── UI helpers ──
+// ── Messages ──
 const seen = new Set()
 function addMsg(u, text, cls, id) {
   if (id && seen.has(id)) return
   if (id) seen.add(id)
   const d = document.createElement('div')
   d.className = 'msg ' + cls
-  if (cls !== 'sys') {
+  if (cls === 'self' || cls === 'other') {
     const n = document.createElement('div')
     n.className = 'name'
     n.textContent = u
@@ -236,16 +299,42 @@ function addMsg(u, text, cls, id) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-async function renderPresence() {
+// ── Presence / users panel ──
+async function refreshPresence() {
   const data = await fbGet(`rooms/${room}/presence`)
-  if (!data) return
-  const now = Date.now()
-  const online = Object.values(data)
-    .filter(u => now - u.ts < 15000)
-    .map(u => u.name)
-  usersBar.textContent = online.length ? '👥 ' + online.join(', ') : ''
+  onlineUsers = {}
+  if (data) {
+    const now = Date.now()
+    Object.values(data)
+      .filter(u => now - u.ts < 15000)
+      .forEach(u => { onlineUsers[u.name] = u })
+  }
+  renderUsersPanel()
 }
 
+function renderUsersPanel() {
+  const names = Object.keys(onlineUsers)
+  userCount.textContent = names.length ? `(${names.length})` : ''
+  usersList.innerHTML = ''
+  names.forEach(name => {
+    const li = document.createElement('li')
+    li.innerHTML = `
+      <span class="dot"></span>
+      <span class="uname">${name}</span>
+      ${name === username ? '<span class="you">(you)</span>' : ''}
+    `
+    usersList.appendChild(li)
+  })
+  if (!names.length) {
+    const li = document.createElement('li')
+    li.style.color = '#555'
+    li.style.fontSize = '0.85em'
+    li.textContent = 'Nobody else here yet'
+    usersList.appendChild(li)
+  }
+}
+
+// ── Typing ──
 async function renderTyping() {
   const data = await fbGet(`rooms/${room}/typing`)
   if (!data) { typingDiv.textContent = ''; return }
@@ -258,16 +347,43 @@ async function renderTyping() {
     : ''
 }
 
+// ── Admin commands ──
+function listenForCommands() {
+  cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({ data }) => {
+    if (!data || !data.cmd) return
+    const { cmd, by } = data
+    if (cmd === 'kick') {
+      alert(`You were kicked by ${by}`)
+      fbDel(`rooms/${room}/commands/${username}`)
+      location.reload()
+    }
+    if (cmd === 'mute') {
+      muted = true
+      addMsg('', `You were muted by ${by}`, 'admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+    }
+    if (cmd === 'unmute') {
+      muted = false
+      addMsg('', `You were unmuted by ${by}`, 'admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+    }
+  })
+}
+
+async function runAdminCommand(cmd, target) {
+  await fbSet(`rooms/${room}/commands/${target}`, { cmd, by: username, ts: Date.now() })
+  addMsg('', `⚡ Admin: /${cmd} → ${target}`, 'admin')
+}
+
 // ── JOIN ──
 joinBtn.onclick = async () => {
-  username  = uInput.value.trim() || 'Anon'
-  room      = rInput.value.trim().replace(/[^a-z0-9_-]/gi, '-').toLowerCase() || 'general'
+  username = uInput.value.trim() || 'Anon'
+  room     = rInput.value.trim().replace(/[^a-z0-9_-]/gi, '-').toLowerCase() || 'general'
 
   joinBtn.disabled    = true
   joinBtn.textContent = 'Connecting…'
   joinErr.textContent = ''
 
-  // Quick reachability check
   try {
     const r = await fetch(fb(`rooms/${room}/ping`))
     if (!r.ok) throw new Error('HTTP ' + r.status)
@@ -278,12 +394,11 @@ joinBtn.onclick = async () => {
     return
   }
 
-  // Switch screens
   joinDiv.style.display = 'none'
   chatDiv.style.display = 'flex'
-  roomTitle.textContent = '#' + room
+  roomTitle.textContent = '#' + room + (username === ADMIN_NAME ? ' 👑' : '')
 
-  // Load existing messages first
+  // Load history
   const existing = await fbGet(`rooms/${room}/messages`)
   if (existing) {
     Object.entries(existing)
@@ -291,33 +406,35 @@ joinBtn.onclick = async () => {
       .forEach(([id, m]) => addMsg(m.u, m.t, m.u === username ? 'self' : 'other', id))
   }
 
-  // Listen for new messages via SSE
-  msgListener = fbListen(`rooms/${room}/messages`, ({ data }) => {
+  // Live streams
+  msgListener     = fbListen(`rooms/${room}/messages`, ({ data }) => {
     if (!data) return
-    const entries = typeof data === 'object' && !data.u
-      ? Object.entries(data)
-      : [[null, data]]
+    const entries = typeof data === 'object' && !data.u ? Object.entries(data) : [[null, data]]
     entries.forEach(([id, m]) => {
       if (m && m.u && m.t) addMsg(m.u, m.t, m.u === username ? 'self' : 'other', id)
     })
   })
+  typingListener  = fbListen(`rooms/${room}/typing`, () => renderTyping())
+  listenForCommands()
 
-  // Presence heartbeat
+  // Presence
   const updatePresence = () => fbSet(`rooms/${room}/presence/${username}`, { name: username, ts: Date.now() })
   await updatePresence()
-  renderPresence()
-  presenceTimer = setInterval(() => { updatePresence(); renderPresence(); renderTyping() }, 8000)
-
-  // Typing listener via SSE
-  fbListen(`rooms/${room}/typing`, () => renderTyping())
+  await refreshPresence()
+  presenceTimer = setInterval(() => {
+    updatePresence()
+    refreshPresence()
+    renderTyping()
+  }, 8000)
 
   addMsg('', 'You joined #' + room, 'sys')
+  if (username === ADMIN_NAME) addMsg('', 'Admin commands: /kick /mute /unmute <username>', 'admin')
   msgInput.focus()
 }
 
 // ── TYPING ──
-msgInput.addEventListener('input', async () => {
-  await fbSet(`rooms/${room}/typing/${username}`, Date.now())
+msgInput.addEventListener('input', () => {
+  fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
   typingTimer = setTimeout(() => fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
@@ -329,6 +446,19 @@ async function sendMessage() {
   msgInput.value = ''
   clearTimeout(typingTimer)
   fbDel(`rooms/${room}/typing/${username}`)
+
+  if (text.startsWith('/') && username === ADMIN_NAME) {
+    const parts = text.slice(1).split(' ')
+    const cmd   = parts[0].toLowerCase()
+    const target = parts.slice(1).join(' ').trim()
+    if (!target) { addMsg('', 'Usage: /kick /mute /unmute <username>', 'admin'); return }
+    if (!['kick','mute','unmute'].includes(cmd)) { addMsg('', 'Unknown command. Use /kick /mute /unmute', 'admin'); return }
+    await runAdminCommand(cmd, target)
+    return
+  }
+
+  if (muted) { addMsg('', 'You are muted.', 'sys'); return }
+
   await fbPost(`rooms/${room}/messages`, { u: username, t: text, ts: Date.now() })
 }
 
@@ -343,6 +473,8 @@ window.addEventListener('beforeunload', () => {
   fbDel(`rooms/${room}/typing/${username}`)
   clearInterval(presenceTimer)
   msgListener?.close()
+  cmdListener?.close()
+  typingListener?.close()
 })
 
 uInput.focus()
