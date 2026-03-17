@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ligma Chat</title>
 <style>
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  margin: 0;
   font-family: Arial, sans-serif;
   background: #1a1a1a;
   color: #fff;
@@ -25,7 +24,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 #join input {
@@ -46,7 +45,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   cursor: pointer;
   font-size: 15px;
 }
-#join-err { color: #ff7d7d; font-size: 0.85em; display: none; min-height: 18px; }
+#join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; }
 
 #chat {
   display: none;
@@ -82,7 +81,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   flex-shrink: 0;
   min-height: 20px;
 }
-
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -103,7 +101,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .msg .name { font-weight: bold; font-size: 0.78em; margin-bottom: 2px; opacity: 0.8; }
 .self  { align-self: flex-end;   background: #ff4757; border-bottom-right-radius: 3px; }
 .other { align-self: flex-start; background: #2f2f2f; border-bottom-left-radius: 3px; }
-.sys   { align-self: center; color: #555; font-size: 0.78em; font-style: italic; padding: 1px 0; background: transparent; }
+.sys   { align-self: center; color: #555; font-size: 0.78em; font-style: italic; background: transparent; }
 
 #typing {
   height: 18px;
@@ -169,41 +167,60 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 </div>
 
 <script>
-// PieSocket free public WebSocket demo
-// Channel is namespaced by room code so different rooms don't mix
-const PIESOCKET_KEY = 'oCdCMcMPQpbvNjUIzqtvF1d55jFflxHMiZgXAN98'
-const PIESOCKET_CLUSTER = 'demo'
+const FB = 'https://ligma--chat-default-rtdb.firebaseio.com'
 
-let ws, username, room
+let username, room
+let msgListener = null
 let typingTimer
-let onlineUsers = {}   // { username: timestamp }
-let typingUsers = {}   // { username: timestamp }
-let reconnectCount = 0
-let reconnectTimer
-let intentionalClose = false
+let presenceTimer
 
-const joinDiv    = document.getElementById('join')
-const chatDiv    = document.getElementById('chat')
-const uInput     = document.getElementById('u-input')
-const rInput     = document.getElementById('r-input')
-const joinBtn    = document.getElementById('join-btn')
-const joinErr    = document.getElementById('join-err')
-const roomTitle  = document.getElementById('room-title')
-const connPill   = document.getElementById('conn-pill')
-const usersBar   = document.getElementById('users-bar')
-const messagesDiv= document.getElementById('messages')
-const typingDiv  = document.getElementById('typing')
-const msgInput   = document.getElementById('msg-input')
-const sendBtn    = document.getElementById('send-btn')
+const joinDiv     = document.getElementById('join')
+const chatDiv     = document.getElementById('chat')
+const uInput      = document.getElementById('u-input')
+const rInput      = document.getElementById('r-input')
+const joinBtn     = document.getElementById('join-btn')
+const joinErr     = document.getElementById('join-err')
+const roomTitle   = document.getElementById('room-title')
+const connPill    = document.getElementById('conn-pill')
+const usersBar    = document.getElementById('users-bar')
+const messagesDiv = document.getElementById('messages')
+const typingDiv   = document.getElementById('typing')
+const msgInput    = document.getElementById('msg-input')
+const sendBtn     = document.getElementById('send-btn')
 
-function setConn(ok) {
-  connPill.textContent = ok ? 'connected' : 'reconnecting…'
-  connPill.className   = ok ? 'ok' : 'err'
-  msgInput.disabled    = !ok
-  sendBtn.disabled     = !ok
+// ── Firebase REST helpers ──
+const fb = (path) => `${FB}/${path}.json`
+
+async function fbPost(path, data) {
+  const r = await fetch(fb(path), { method: 'POST', body: JSON.stringify(data) })
+  return r.json()
+}
+async function fbSet(path, data) {
+  await fetch(fb(path), { method: 'PUT', body: JSON.stringify(data) })
+}
+async function fbDel(path) {
+  await fetch(fb(path), { method: 'DELETE' })
+}
+async function fbGet(path) {
+  const r = await fetch(fb(path))
+  return r.json()
 }
 
-function addMsg(u, text, cls) {
+// ── SSE real-time listener ──
+function fbListen(path, cb) {
+  const es = new EventSource(fb(path))
+  es.addEventListener('put',   e => { try { cb(JSON.parse(e.data)) } catch {} })
+  es.addEventListener('patch', e => { try { cb(JSON.parse(e.data)) } catch {} })
+  es.onopen  = () => { connPill.textContent = 'connected'; connPill.className = 'ok'; msgInput.disabled = false; sendBtn.disabled = false }
+  es.onerror = () => { connPill.textContent = 'reconnecting…'; connPill.className = 'err'; msgInput.disabled = true; sendBtn.disabled = true }
+  return es
+}
+
+// ── UI helpers ──
+const seen = new Set()
+function addMsg(u, text, cls, id) {
+  if (id && seen.has(id)) return
+  if (id) seen.add(id)
   const d = document.createElement('div')
   d.className = 'msg ' + cls
   if (cls !== 'sys') {
@@ -219,17 +236,21 @@ function addMsg(u, text, cls) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-function renderUsers() {
+async function renderPresence() {
+  const data = await fbGet(`rooms/${room}/presence`)
+  if (!data) return
   const now = Date.now()
-  const online = Object.entries(onlineUsers)
-    .filter(([, ts]) => now - ts < 15000)
-    .map(([u]) => u)
+  const online = Object.values(data)
+    .filter(u => now - u.ts < 15000)
+    .map(u => u.name)
   usersBar.textContent = online.length ? '👥 ' + online.join(', ') : ''
 }
 
-function renderTyping() {
+async function renderTyping() {
+  const data = await fbGet(`rooms/${room}/typing`)
+  if (!data) { typingDiv.textContent = ''; return }
   const now = Date.now()
-  const who = Object.entries(typingUsers)
+  const who = Object.entries(data)
     .filter(([u, ts]) => u !== username && now - ts < 3000)
     .map(([u]) => u)
   typingDiv.textContent = who.length
@@ -237,124 +258,78 @@ function renderTyping() {
     : ''
 }
 
-function send(obj) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(obj))
-  }
-}
-
-function connect() {
-  // PieSocket channel name = "ligma-" + room (so rooms are isolated)
-  const channelId = 'ligma-' + room
-  const url = `wss://${PIESOCKET_CLUSTER}.piesocket.com/v3/${channelId}?api_key=${PIESOCKET_KEY}&notify_self=1`
-
-  ws = new WebSocket(url)
-
-  ws.onopen = () => {
-    reconnectCount = 0
-    setConn(true)
-    // announce presence
-    send({ type: 'join', u: username })
-    // heartbeat every 8s to stay in online list
-    clearInterval(window._heartbeat)
-    window._heartbeat = setInterval(() => {
-      send({ type: 'presence', u: username })
-      renderUsers()
-      renderTyping()
-    }, 8000)
-  }
-
-  ws.onmessage = ({ data }) => {
-    let msg
-    try { msg = JSON.parse(data) } catch { return }
-
-    // PieSocket wraps messages in a "data" field sometimes
-    if (msg.data && typeof msg.data === 'string') {
-      try { msg = JSON.parse(msg.data) } catch { return }
-    } else if (msg.data && typeof msg.data === 'object') {
-      msg = msg.data
-    }
-
-    if (!msg.type) return
-
-    switch (msg.type) {
-      case 'chat':
-        if (msg.u !== username) addMsg(msg.u, msg.t, 'other')
-        onlineUsers[msg.u] = Date.now()
-        renderUsers()
-        break
-      case 'join':
-        if (msg.u !== username) addMsg('', msg.u + ' joined', 'sys')
-        onlineUsers[msg.u] = Date.now()
-        renderUsers()
-        // reply with our presence so they know we're here
-        send({ type: 'presence', u: username })
-        break
-      case 'leave':
-        addMsg('', msg.u + ' left', 'sys')
-        delete onlineUsers[msg.u]
-        renderUsers()
-        break
-      case 'presence':
-        onlineUsers[msg.u] = Date.now()
-        renderUsers()
-        break
-      case 'typing':
-        if (msg.u !== username) {
-          typingUsers[msg.u] = Date.now()
-          renderTyping()
-        }
-        break
-    }
-  }
-
-  ws.onclose = () => {
-    setConn(false)
-    clearInterval(window._heartbeat)
-    if (!intentionalClose) scheduleReconnect()
-  }
-
-  ws.onerror = () => {
-    setConn(false)
-  }
-}
-
-function scheduleReconnect() {
-  clearTimeout(reconnectTimer)
-  const delay = Math.min(1500 * Math.pow(2, reconnectCount), 20000)
-  reconnectCount++
-  reconnectTimer = setTimeout(connect, delay)
-}
-
 // ── JOIN ──
-joinBtn.onclick = () => {
-  username = uInput.value.trim() || 'Anon'
-  room     = rInput.value.trim().replace(/[^a-z0-9-_]/gi, '-').toLowerCase() || 'general'
+joinBtn.onclick = async () => {
+  username  = uInput.value.trim() || 'Anon'
+  room      = rInput.value.trim().replace(/[^a-z0-9_-]/gi, '-').toLowerCase() || 'general'
 
+  joinBtn.disabled    = true
+  joinBtn.textContent = 'Connecting…'
+  joinErr.textContent = ''
+
+  // Quick reachability check
+  try {
+    const r = await fetch(fb(`rooms/${room}/ping`))
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+  } catch (e) {
+    joinErr.textContent = 'Cannot reach Firebase: ' + e.message
+    joinBtn.disabled    = false
+    joinBtn.textContent = 'Join Room'
+    return
+  }
+
+  // Switch screens
   joinDiv.style.display = 'none'
   chatDiv.style.display = 'flex'
   roomTitle.textContent = '#' + room
 
-  onlineUsers[username] = Date.now()
-  connect()
+  // Load existing messages first
+  const existing = await fbGet(`rooms/${room}/messages`)
+  if (existing) {
+    Object.entries(existing)
+      .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0))
+      .forEach(([id, m]) => addMsg(m.u, m.t, m.u === username ? 'self' : 'other', id))
+  }
+
+  // Listen for new messages via SSE
+  msgListener = fbListen(`rooms/${room}/messages`, ({ data }) => {
+    if (!data) return
+    const entries = typeof data === 'object' && !data.u
+      ? Object.entries(data)
+      : [[null, data]]
+    entries.forEach(([id, m]) => {
+      if (m && m.u && m.t) addMsg(m.u, m.t, m.u === username ? 'self' : 'other', id)
+    })
+  })
+
+  // Presence heartbeat
+  const updatePresence = () => fbSet(`rooms/${room}/presence/${username}`, { name: username, ts: Date.now() })
+  await updatePresence()
+  renderPresence()
+  presenceTimer = setInterval(() => { updatePresence(); renderPresence(); renderTyping() }, 8000)
+
+  // Typing listener via SSE
+  fbListen(`rooms/${room}/typing`, () => renderTyping())
+
   addMsg('', 'You joined #' + room, 'sys')
+  msgInput.focus()
 }
 
 // ── TYPING ──
-msgInput.addEventListener('input', () => {
-  send({ type: 'typing', u: username })
+msgInput.addEventListener('input', async () => {
+  await fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
-  typingTimer = setTimeout(() => {}, 2000)
+  typingTimer = setTimeout(() => fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
 // ── SEND ──
-function sendMessage() {
+async function sendMessage() {
   const text = msgInput.value.trim()
-  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return
+  if (!text) return
   msgInput.value = ''
   clearTimeout(typingTimer)
-  send({ type: 'chat', u: username, t: text })
-  addMsg(username, text, 'self')
+  fbDel(`rooms/${room}/typing/${username}`)
+  await fbPost(`rooms/${room}/messages`, { u: username, t: text, ts: Date.now() })
 }
 
 sendBtn.onclick = sendMessage
@@ -364,9 +339,10 @@ msgInput.addEventListener('keydown', e => {
 
 // ── LEAVE ──
 window.addEventListener('beforeunload', () => {
-  intentionalClose = true
-  send({ type: 'leave', u: username })
-  ws && ws.close()
+  fbDel(`rooms/${room}/presence/${username}`)
+  fbDel(`rooms/${room}/typing/${username}`)
+  clearInterval(presenceTimer)
+  msgListener?.close()
 })
 
 uInput.focus()
