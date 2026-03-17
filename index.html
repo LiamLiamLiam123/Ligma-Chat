@@ -18,20 +18,51 @@ body {
 }
 h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #join {
-  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; width: 100%;
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 12px; width: 100%;
 }
-#join input { padding: 10px; border: none; border-radius: 5px; background: #444; color: #fff; width: 280px; font-size: 15px; }
-#join button { padding: 10px 28px; border: none; border-radius: 5px; background: #ff4757; color: #fff; cursor: pointer; font-size: 15px; }
-#join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; text-align: center; max-width: 280px; }
-#chat { display: none; flex-direction: column; width: 100%; max-width: 540px; flex: 1; min-height: 0; position: relative; }
-.top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; flex-shrink: 0; border-bottom: 1px solid #2a2a2a; gap: 8px; }
+#join input {
+  padding: 10px; border: none; border-radius: 5px;
+  background: #444; color: #fff; width: 280px; font-size: 15px;
+}
+#join button {
+  padding: 10px 28px; border: none; border-radius: 5px;
+  background: #ff4757; color: #fff; cursor: pointer; font-size: 15px;
+}
+#join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; text-align: center; }
+#chat {
+  display: none; flex-direction: column; width: 100%;
+  max-width: 540px; flex: 1; min-height: 0; position: relative;
+}
+.top-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 12px; flex-shrink: 0; border-bottom: 1px solid #2a2a2a; gap: 8px;
+}
 #room-title { font-weight: bold; font-size: 0.95em; color: #ccc; flex: 1; }
-#conn-pill { font-size: 0.72em; padding: 2px 10px; border-radius: 10px; background: #333; color: #ffd97d; }
-#conn-pill.ok { color: #7dffaa; }
+#conn-pill {
+  font-size: 0.72em; padding: 2px 10px; border-radius: 10px;
+  background: #333; color: #ffd97d;
+}
+#conn-pill.ok  { color: #7dffaa; }
 #conn-pill.err { color: #ff7d7d; }
-#users-btn { background: #333; border: none; color: #fff; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+#users-btn {
+  background: #333; border: none; color: #fff; padding: 4px 10px;
+  border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
+}
 #users-btn:hover { background: #444; }
-#users-panel { display: none; position: absolute; top: 42px; right: 12px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; padding: 10px 14px; min-width: 180px; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+#pin-bar {
+  display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
+  padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
+  flex-shrink: 0; gap: 8px; align-items: center;
+}
+#pin-bar.show { display: flex; }
+#pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#users-panel {
+  display: none; position: absolute; top: 42px; right: 12px;
+  background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
+  padding: 10px 14px; min-width: 180px; z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
 #users-panel.open { display: block; }
 #users-panel h3 { font-size: 0.8em; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 #users-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
@@ -39,352 +70,402 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #users-list li .dot { width: 8px; height: 8px; border-radius: 50%; background: #7dffaa; flex-shrink: 0; }
 #users-list li .uname { color: #ddd; }
 #users-list li .you { font-size: 0.75em; color: #666; }
-#pin-bar { display: none; background: #2a2020; border-left: 3px solid #ff4757; padding: 6px 12px; font-size: 0.82em; color: #ccc; flex-shrink: 0; align-items: center; gap: 8px; }
-#pin-bar.show { display: flex; }
-#pin-bar .pin-label { color: #ff4757; font-weight: bold; margin-right: 4px; white-space: nowrap; }
-#pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#messages { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
-.announce-msg { align-self: stretch; background: #2a1010; border: 1px solid #ff4757; border-radius: 8px; padding: 10px 14px; text-align: center; font-size: 1em; color: #fff; }
-.announce-label { color: #ff4757; font-weight: bold; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
-#reply-bar { display: none; background: #2a2a2a; border-left: 3px solid #ff4757; padding: 5px 10px; font-size: 0.8em; color: #aaa; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; }
+#messages {
+  flex: 1; overflow-y: auto; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px; min-height: 0;
+}
+.announce-wrap {
+  align-self: stretch; background: #1e1535;
+  border: 1px solid #7c3aed55; border-radius: 10px; padding: 12px 16px; text-align: center;
+}
+.announce-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
+.announce-text  { font-size: 1.05em; font-weight: bold; color: #e9d5ff; }
+.announce-by    { font-size: 0.72em; color: #7c3aed; margin-top: 4px; }
+#reply-bar {
+  display: none; background: #2a2a2a; border-left: 3px solid #ff4757;
+  padding: 5px 10px; font-size: 0.8em; color: #aaa;
+  flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px;
+}
 #reply-bar.show { display: flex; }
 #reply-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 #reply-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; padding: 0 4px; }
 .msg-wrap { display: flex; flex-direction: column; gap: 2px; max-width: 72%; }
-.msg-wrap.self-wrap { align-self: flex-end; align-items: flex-end; }
+.msg-wrap.self-wrap  { align-self: flex-end;   align-items: flex-end; }
 .msg-wrap.other-wrap { align-self: flex-start; align-items: flex-start; }
-.reply-preview { font-size: 0.75em; color: #888; background: #252525; border-left: 2px solid #ff4757; padding: 2px 8px; border-radius: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.msg { padding: 8px 12px; border-radius: 10px; word-break: break-word; font-size: 0.95em; line-height: 1.4; }
+.reply-preview {
+  font-size: 0.75em; color: #888; background: #252525;
+  border-left: 2px solid #ff4757; padding: 2px 8px; border-radius: 4px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.msg {
+  padding: 8px 12px; border-radius: 10px;
+  word-break: break-word; font-size: 0.95em; line-height: 1.4;
+}
 .msg .name { font-weight: bold; font-size: 0.78em; margin-bottom: 2px; opacity: 0.8; }
-.self { background: #ff4757; border-bottom-right-radius: 3px; }
-.other { background: #2f2f2f; border-bottom-left-radius: 3px; }
-.sys { color: #555; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
-.admin { color: #ffd97d; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
+.self    { background: #ff4757; border-bottom-right-radius: 3px; }
+.other   { background: #2f2f2f; border-bottom-left-radius: 3px; }
+.sys     { color: #555; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
+.admin   { color: #ffd97d; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
 .deleted { color: #555 !important; font-style: italic; background: #222 !important; }
 .msg-actions { display: none; gap: 4px; margin-top: 2px; }
 .msg-wrap:hover .msg-actions { display: flex; }
-.action-btn { background: #333; border: none; color: #aaa; font-size: 11px; padding: 2px 7px; border-radius: 4px; cursor: pointer; }
+.action-btn {
+  background: #333; border: none; color: #aaa;
+  font-size: 11px; padding: 2px 7px; border-radius: 4px; cursor: pointer;
+}
 .action-btn:hover { background: #444; color: #fff; }
 .reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
-.reaction-pill { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px; padding: 1px 7px; font-size: 13px; cursor: pointer; user-select: none; }
+.reaction-pill {
+  background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px;
+  padding: 1px 7px; font-size: 13px; cursor: pointer; user-select: none;
+}
 .reaction-pill:hover { background: #3a3a3a; }
-.reaction-pill.mine { border-color: #ff4757; background: #3a1a1a; }
+.reaction-pill.mine  { border-color: #ff4757; background: #3a1a1a; }
 .reaction-picker { display: none; gap: 4px; margin-top: 2px; }
 .msg-wrap:hover .reaction-picker { display: flex; }
 .react-opt { background: #333; border: none; font-size: 15px; padding: 2px 5px; border-radius: 6px; cursor: pointer; }
 .react-opt:hover { background: #444; }
 #typing { height: 18px; font-size: 0.78em; color: #666; padding: 0 12px; flex-shrink: 0; font-style: italic; }
 #input-row { display: flex; padding: 10px 12px; gap: 8px; flex-shrink: 0; border-top: 1px solid #2a2a2a; }
-#input-row input { flex: 1; padding: 10px 14px; border: none; border-radius: 20px; background: #333; color: #fff; font-size: 14px; outline: none; }
+#input-row input {
+  flex: 1; padding: 10px 14px; border: none; border-radius: 20px;
+  background: #333; color: #fff; font-size: 14px; outline: none;
+}
 #input-row input:disabled { opacity: 0.4; }
-#input-row button { padding: 10px 18px; border: none; border-radius: 20px; background: #ff4757; color: #fff; cursor: pointer; font-size: 14px; }
+#input-row button {
+  padding: 10px 18px; border: none; border-radius: 20px;
+  background: #ff4757; color: #fff; cursor: pointer; font-size: 14px;
+}
 #input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
-<h1>Ligma Chat</h1>
+<h1>Ligma Chat 💬</h1>
+
 <div id="join">
   <input id="u-input" placeholder="Username" maxlength="24">
   <input id="r-input" placeholder="Room code" maxlength="32" value="general">
   <button id="join-btn">Join Room</button>
   <div id="join-err"></div>
 </div>
+
 <div id="chat">
   <div class="top-bar">
     <div id="room-title"></div>
-    <div id="conn-pill">connecting...</div>
-    <button id="users-btn">Users <span id="user-count"></span></button>
+    <div id="conn-pill">connecting…</div>
+    <button id="users-btn">👥 Users <span id="user-count"></span></button>
+  </div>
+  <div id="pin-bar">
+    <span>📌</span>
+    <span class="pin-text" id="pin-text"></span>
   </div>
   <div id="users-panel">
     <h3>Online now</h3>
     <ul id="users-list"></ul>
   </div>
-  <div id="pin-bar">
-    <span class="pin-label">Pinned</span>
-    <span class="pin-text" id="pin-text"></span>
-  </div>
   <div id="messages"></div>
   <div id="reply-bar">
     <span id="reply-preview-text"></span>
-    <button id="reply-cancel">x</button>
+    <button id="reply-cancel">✕</button>
   </div>
   <div id="typing"></div>
   <div id="input-row">
-    <input id="msg-input" autocomplete="off" placeholder="Message..." disabled maxlength="500">
+    <input id="msg-input" autocomplete="off" placeholder="Message…" disabled maxlength="500">
     <button id="send-btn" disabled>Send</button>
   </div>
 </div>
+
 <script>
-const FB='https://ligma--chat-default-rtdb.firebaseio.com';
-const ADMIN_NAME='Admin:Liam';
-const REACTIONS=['thumbsup','heart','laugh','wow','sad'];
-const REACTION_EMOJI={'thumbsup':'👍','heart':'❤️','laugh':'😂','wow':'😮','sad':'😢'};
-const BAD_WORDS=['fuck','shit','bitch','cunt','dick','pussy','bastard'];
-function filterProfanity(t){let o=t;BAD_WORDS.forEach(w=>{o=o.replace(new RegExp('\\b'+w+'\\b','gi'),'*'.repeat(w.length))});return o;}
-let username,room,muted=false,replyingTo=null,joinTime=0;
-let msgListener,cmdListener,typingListener,pinListener,typingTimer,presenceTimer;
-const $=id=>document.getElementById(id);
-const joinDiv=$('join'),chatDiv=$('chat'),uInput=$('u-input'),rInput=$('r-input'),joinBtn=$('join-btn'),joinErr=$('join-err');
-const roomTitle=$('room-title'),connPill=$('conn-pill'),usersBtn=$('users-btn'),usersPanel=$('users-panel');
-const usersList=$('users-list'),userCount=$('user-count'),pinBar=$('pin-bar'),pinText=$('pin-text');
-const messagesDiv=$('messages'),replyBar=$('reply-bar'),replyPreviewText=$('reply-preview-text');
-const replyCancel=$('reply-cancel'),typingDiv=$('typing'),msgInput=$('msg-input'),sendBtn=$('send-btn');
-usersBtn.onclick=()=>usersPanel.classList.toggle('open');
-document.addEventListener('click',e=>{if(!usersPanel.contains(e.target)&&e.target!==usersBtn)usersPanel.classList.remove('open');});
-replyCancel.onclick=clearReply;
-const fb=p=>`${FB}/${p}.json`;
-const fbPost=(p,d)=>fetch(fb(p),{method:'POST',body:JSON.stringify(d)}).then(r=>r.json());
-const fbSet=(p,d)=>fetch(fb(p),{method:'PUT',body:JSON.stringify(d)});
-const fbDel=p=>fetch(fb(p),{method:'DELETE'});
-const fbGet=p=>fetch(fb(p)).then(r=>r.json());
-const fbPatch=(p,d)=>fetch(fb(p),{method:'PATCH',body:JSON.stringify(d)});
-function fbListen(path,cb){
-  const es=new EventSource(fb(path));
-  es.addEventListener('put',e=>{try{cb(JSON.parse(e.data))}catch{}});
-  es.addEventListener('patch',e=>{try{cb(JSON.parse(e.data))}catch{}});
-  es.onopen=()=>{connPill.textContent='connected';connPill.className='ok';msgInput.disabled=false;sendBtn.disabled=false;};
-  es.onerror=()=>{connPill.textContent='reconnecting...';connPill.className='err';msgInput.disabled=true;sendBtn.disabled=true;};
-  return es;
+const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
+const ADMIN_NAME = 'Admin:Liam'
+const REACTIONS  = ['👍','❤️','😂','😮','😢']
+const BAD_WORDS  = ['fuck','shit','ass','bitch','cunt','dick','pussy','bastard','damn','crap']
+
+function filterProfanity(text) {
+  let out = text
+  BAD_WORDS.forEach(w => { out = out.replace(new RegExp(`\\b${w}\\b`,'gi'), '*'.repeat(w.length)) })
+  return out
 }
-async function isUsernameTaken(name){
-  const p=await fbGet(`rooms/${room}/presence`);
-  if(!p)return false;
-  const now=Date.now();
-  return Object.values(p).some(u=>u.name===name&&now-u.ts<15000);
+
+let username, room, muted=false, joinTime=0, replyingTo=null
+let msgListener, cmdListener, typingListener, pinListener, typingTimer, presenceTimer
+
+const $ = id => document.getElementById(id)
+const joinDiv=$('join'), chatDiv=$('chat'), uInput=$('u-input'), rInput=$('r-input')
+const joinBtn=$('join-btn'), joinErr=$('join-err'), roomTitle=$('room-title')
+const connPill=$('conn-pill'), usersBtn=$('users-btn'), usersPanel=$('users-panel')
+const usersList=$('users-list'), userCount=$('user-count'), pinBar=$('pin-bar')
+const pinText=$('pin-text'), messagesDiv=$('messages'), replyBar=$('reply-bar')
+const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
+const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
+
+usersBtn.onclick = () => usersPanel.classList.toggle('open')
+document.addEventListener('click', e => { if (!usersPanel.contains(e.target)&&e.target!==usersBtn) usersPanel.classList.remove('open') })
+replyCancel.onclick = clearReply
+
+const fb      = p    => `${FB}/${p}.json`
+const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
+const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
+const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
+const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
+const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
+
+function fbListen(path, cb) {
+  const es = new EventSource(fb(path))
+  es.addEventListener('put',   e=>{ try{cb(JSON.parse(e.data))}catch{} })
+  es.addEventListener('patch', e=>{ try{cb(JSON.parse(e.data))}catch{} })
+  es.onopen  = ()=>{ connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
+  es.onerror = ()=>{ connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
+  return es
 }
-const seen=new Set();
-function renderMsg(id,m){
-  if(!m||!m.u)return;
-  if(seen.has(id)){updateMsg(id,m);return;}
-  if(m.ts<joinTime)return;
-  seen.add(id);
-  if(m.type==='announce'){
-    const wrap=document.createElement('div');
-    wrap.className='announce-msg';
-    wrap.dataset.id=id;
-    const lbl=document.createElement('div');
-    lbl.className='announce-label';
-    lbl.textContent='Announcement';
-    const body=document.createElement('div');
-    body.textContent=m.t;
-    wrap.appendChild(lbl);wrap.appendChild(body);
-    messagesDiv.appendChild(wrap);
-    messagesDiv.scrollTop=messagesDiv.scrollHeight;
-    return;
+
+const seen = new Set()
+
+function renderMsg(id, m) {
+  if (!m||!m.u||!m.t) return
+  if (m.ts < joinTime) return
+  if (seen.has(id)) { updateMsg(id,m); return }
+  seen.add(id)
+
+  const isMe = m.u===username
+  const wrap = document.createElement('div')
+  wrap.className = `msg-wrap ${isMe?'self-wrap':'other-wrap'}`
+  wrap.dataset.id = id
+
+  if (m.replyTo) {
+    const rp = document.createElement('div')
+    rp.className = 'reply-preview'
+    rp.textContent = `↩ ${m.replyTo.u}: ${m.replyTo.t}`
+    wrap.appendChild(rp)
   }
-  const isMe=m.u===username;
-  const wrap=document.createElement('div');
-  wrap.className='msg-wrap '+(isMe?'self-wrap':'other-wrap');
-  wrap.dataset.id=id;
-  if(m.replyTo){
-    const rp=document.createElement('div');
-    rp.className='reply-preview';
-    rp.textContent='Reply to '+m.replyTo.u+': '+m.replyTo.t;
-    wrap.appendChild(rp);
+
+  const bubble = document.createElement('div')
+  bubble.className = `msg ${isMe?'self':'other'}`
+  bubble.dataset.id = id
+  if (m.deleted) bubble.classList.add('deleted')
+  const name = document.createElement('div')
+  name.className='name'; name.textContent=m.u
+  bubble.appendChild(name)
+  const body = document.createElement('div')
+  body.className='msg-body'
+  body.textContent = m.deleted ? '🚫 Message deleted' : filterProfanity(m.t)
+  bubble.appendChild(body)
+  wrap.appendChild(bubble)
+
+  const rd = document.createElement('div')
+  rd.className='reactions'; rd.dataset.id=id
+  renderReactions(rd, m.reactions||{})
+  wrap.appendChild(rd)
+
+  const picker = document.createElement('div')
+  picker.className='reaction-picker'
+  REACTIONS.forEach(e=>{ const b=document.createElement('button'); b.className='react-opt'; b.textContent=e; b.onclick=()=>toggleReaction(id,e); picker.appendChild(b) })
+  wrap.appendChild(picker)
+
+  const actions = document.createElement('div')
+  actions.className='msg-actions'
+  const replyBtn=document.createElement('button'); replyBtn.className='action-btn'; replyBtn.textContent='↩ Reply'; replyBtn.onclick=()=>setReply(id,m.u,m.t); actions.appendChild(replyBtn)
+  if ((isMe||username===ADMIN_NAME)&&!m.deleted) {
+    const delBtn=document.createElement('button'); delBtn.className='action-btn'; delBtn.textContent='🗑 Delete'; delBtn.onclick=()=>fbPatch(`rooms/${room}/messages/${id}`,{deleted:true}); actions.appendChild(delBtn)
   }
-  const bubble=document.createElement('div');
-  bubble.className='msg '+(isMe?'self':'other');
-  bubble.dataset.id=id;
-  const name=document.createElement('div');
-  name.className='name';
-  name.textContent=m.u;
-  bubble.appendChild(name);
-  const body=document.createElement('div');
-  body.className='msg-body';
-  body.textContent=m.deleted?'Message deleted':filterProfanity(m.t);
-  if(m.deleted)bubble.classList.add('deleted');
-  bubble.appendChild(body);
-  wrap.appendChild(bubble);
-  const rd=document.createElement('div');rd.className='reactions';rd.dataset.id=id;
-  renderReactions(rd,m.reactions||{});wrap.appendChild(rd);
-  const picker=document.createElement('div');picker.className='reaction-picker';
-  REACTIONS.forEach(key=>{
-    const btn=document.createElement('button');btn.className='react-opt';
-    btn.textContent=REACTION_EMOJI[key];
-    btn.onclick=()=>toggleReaction(id,key);
-    picker.appendChild(btn);
-  });
-  wrap.appendChild(picker);
-  const actions=document.createElement('div');actions.className='msg-actions';
-  const rb=document.createElement('button');rb.className='action-btn';rb.textContent='Reply';
-  rb.onclick=()=>setReply(id,m.u,m.t);actions.appendChild(rb);
-  if((isMe||username===ADMIN_NAME)&&!m.deleted){
-    const db=document.createElement('button');db.className='action-btn';db.textContent='Delete';
-    db.onclick=()=>deleteMsg(id);actions.appendChild(db);
+  if (username===ADMIN_NAME&&!m.deleted) {
+    const pinBtn=document.createElement('button'); pinBtn.className='action-btn'; pinBtn.textContent='📌 Pin'; pinBtn.onclick=()=>doPin(m.u,m.t); actions.appendChild(pinBtn)
   }
-  if(username===ADMIN_NAME&&!m.deleted){
-    const pb=document.createElement('button');pb.className='action-btn';pb.textContent='Pin';
-    pb.onclick=()=>pinMessage(m.u,m.t);actions.appendChild(pb);
-  }
-  wrap.appendChild(actions);
-  messagesDiv.appendChild(wrap);
-  messagesDiv.scrollTop=messagesDiv.scrollHeight;
+  wrap.appendChild(actions)
+  messagesDiv.appendChild(wrap)
+  messagesDiv.scrollTop=messagesDiv.scrollHeight
 }
-function updateMsg(id,m){
-  const bubble=messagesDiv.querySelector('.msg[data-id="'+id+'"]');
-  if(bubble&&m.deleted){const b=bubble.querySelector('.msg-body');if(b)b.textContent='Message deleted';bubble.classList.add('deleted');}
-  const rd=messagesDiv.querySelector('.reactions[data-id="'+id+'"]');
-  if(rd)renderReactions(rd,m.reactions||{});
+
+function renderAnnounce(id, m) {
+  if (!m||m.ts<joinTime||seen.has(id)) return
+  seen.add(id)
+  const wrap=document.createElement('div')
+  wrap.className='announce-wrap'
+  wrap.innerHTML=`<div class="announce-label">📢 Announcement</div><div class="announce-text">${filterProfanity(m.t)}</div><div class="announce-by">— ${m.u}</div>`
+  messagesDiv.appendChild(wrap)
+  messagesDiv.scrollTop=messagesDiv.scrollHeight
 }
-function renderReactions(div,reactions){
-  div.innerHTML='';
-  const counts={},mine=new Set();
-  Object.entries(reactions).forEach(([uid,emojis])=>{
-    Object.keys(emojis).forEach(e=>{counts[e]=(counts[e]||0)+1;if(uid===username)mine.add(e);});
-  });
-  Object.entries(counts).forEach(([key,count])=>{
-    const pill=document.createElement('span');
-    pill.className='reaction-pill'+(mine.has(key)?' mine':'');
-    pill.textContent=(REACTION_EMOJI[key]||key)+' '+count;
-    pill.onclick=()=>toggleReaction(div.dataset.id,key);
-    div.appendChild(pill);
-  });
+
+function updateMsg(id, m) {
+  const b=messagesDiv.querySelector(`.msg[data-id="${id}"]`)
+  if (b&&m.deleted) { b.querySelector('.msg-body').textContent='🚫 Message deleted'; b.classList.add('deleted') }
+  const rd=messagesDiv.querySelector(`.reactions[data-id="${id}"]`)
+  if (rd) renderReactions(rd, m.reactions||{})
 }
-function addSys(text,cls='sys'){
-  const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;
-  messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight;
+
+function renderReactions(div, reactions) {
+  div.innerHTML=''
+  const counts={}, mine=new Set()
+  Object.entries(reactions).forEach(([uid,emojis])=>{ Object.keys(emojis).forEach(e=>{ counts[e]=(counts[e]||0)+1; if(uid===username)mine.add(e) }) })
+  Object.entries(counts).forEach(([emoji,count])=>{ const p=document.createElement('span'); p.className='reaction-pill'+(mine.has(emoji)?' mine':''); p.textContent=`${emoji} ${count}`; p.onclick=()=>toggleReaction(div.dataset.id,emoji); div.appendChild(p) })
 }
-function setReply(id,u,t){replyingTo={id,u,t};replyPreviewText.textContent='Replying to '+u+': '+t;replyBar.classList.add('show');msgInput.focus();}
-function clearReply(){replyingTo=null;replyBar.classList.remove('show');}
-async function deleteMsg(id){await fbPatch(`rooms/${room}/messages/${id}`,{deleted:true});}
-async function toggleReaction(msgId,key){
-  const path=`rooms/${room}/messages/${msgId}/reactions/${username}/${key}`;
-  const ex=await fbGet(path);
-  if(ex){await fbDel(path);}else{await fbSet(path,true);}
+
+function addSys(text, cls='sys') {
+  const d=document.createElement('div'); d.className=`msg ${cls}`; d.textContent=text
+  messagesDiv.appendChild(d); messagesDiv.scrollTop=messagesDiv.scrollHeight
 }
-async function pinMessage(u,t){await fbSet(`rooms/${room}/pin`,{u,t,ts:Date.now()});}
-function showPin(data){
-  if(!data){pinBar.classList.remove('show');return;}
-  pinText.textContent=data.u+': '+data.t;pinBar.classList.add('show');
+
+function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
+function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
+
+async function toggleReaction(msgId, emoji) {
+  const path=`rooms/${room}/messages/${msgId}/reactions/${username}/${emoji}`
+  const ex=await fbGet(path); if(ex) await fbDel(path); else await fbSet(path,true)
 }
-async function refreshPresence(){
-  const data=await fbGet(`rooms/${room}/presence`);
-  const now=Date.now();
-  const online=data?Object.values(data).filter(u=>now-u.ts<15000):[];
-  userCount.textContent=online.length?'('+online.length+')':'';
-  usersList.innerHTML='';
-  online.forEach(u=>{
-    const li=document.createElement('li');
-    li.innerHTML='<span class="dot"></span><span class="uname">'+u.name+'</span>'+(u.name===username?'<span class="you">(you)</span>':'');
-    usersList.appendChild(li);
-  });
-  if(!online.length){const li=document.createElement('li');li.style.cssText='color:#555;font-size:0.85em';li.textContent='Nobody else here';usersList.appendChild(li);}
+
+async function doPin(u, t) {
+  await fbSet(`rooms/${room}/pin`,{u,t,ts:Date.now()})
 }
-async function renderTyping(){
-  const data=await fbGet(`rooms/${room}/typing`);
-  if(!data){typingDiv.textContent='';return;}
-  const now=Date.now();
-  const who=Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u);
-  typingDiv.textContent=who.length?who.join(', ')+(who.length===1?' is typing...':' are typing...'):'';
+
+function showPin(data) {
+  if (!data||!data.t) { pinBar.classList.remove('show'); return }
+  pinText.textContent=`${data.u}: ${data.t}`; pinBar.classList.add('show')
 }
-function listenForCommands(){
+
+async function refreshPresence() {
+  const data=await fbGet(`rooms/${room}/presence`)
+  const now=Date.now()
+  const online=data?Object.values(data).filter(u=>now-u.ts<15000):[]
+  userCount.textContent=online.length?`(${online.length})`:''
+  usersList.innerHTML=''
+  if (!online.length) { const li=document.createElement('li'); li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'; usersList.appendChild(li); return }
+  online.forEach(u=>{ const li=document.createElement('li'); li.innerHTML=`<span class="dot"></span><span class="uname">${u.name}</span>${u.name===username?'<span class="you">(you)</span>':''}`; usersList.appendChild(li) })
+}
+
+async function renderTyping() {
+  const data=await fbGet(`rooms/${room}/typing`)
+  if (!data){typingDiv.textContent='';return}
+  const now=Date.now()
+  const who=Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
+  typingDiv.textContent=who.length?who.join(', ')+(who.length===1?' is typing…':' are typing…'):''
+}
+
+function listenForCommands() {
+  cmdListener?.close()
   cmdListener=fbListen(`rooms/${room}/commands/${username}`,({data})=>{
-    if(!data||!data.cmd)return;
-    const{cmd,by,value}=data;
-    if(cmd==='kick'){alert('You were kicked by '+by);fbDel(`rooms/${room}/commands/${username}`);location.reload();}
-    if(cmd==='mute'){muted=true;addSys('You were muted by '+by,'admin');fbDel(`rooms/${room}/commands/${username}`);}
-    if(cmd==='unmute'){muted=false;addSys('You were unmuted by '+by,'admin');fbDel(`rooms/${room}/commands/${username}`);}
-    if(cmd==='rename'){
-      addSys('You were renamed to "'+value+'" by '+by,'admin');
-      fbDel(`rooms/${room}/commands/${username}`);
-      fbDel(`rooms/${room}/presence/${username}`);
-      username=value;
-      fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()});
+    if (!data||!data.cmd) return
+    const {cmd,by,value}=data
+    if (cmd==='kick')   { alert(`Kicked by ${by}`); fbDel(`rooms/${room}/commands/${username}`); location.reload() }
+    if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
+    if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
+    if (cmd==='rename') {
+      const old=username; username=value
+      fbDel(`rooms/${room}/presence/${old}`)
+      fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
+      addSys(`Renamed to "${value}" by ${by}`,'admin')
+      fbDel(`rooms/${room}/commands/${old}`)
+      listenForCommands()
     }
-  });
+  })
 }
-async function runAdminCommand(cmd,args){
-  const target=args[0];
-  const rest=args.slice(1).join(' ');
-  if(cmd==='announce'){
-    const text=args.join(' ');
-    if(!text){addSys('Usage: /announce <message>','admin');return;}
-    await fbPost(`rooms/${room}/messages`,{u:ADMIN_NAME,t:text,type:'announce',ts:Date.now()});
-    return;
+
+async function runAdminCommand(cmd, args) {
+  if (cmd==='announce') {
+    await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true})
+    addSys('📢 Announcement sent','admin'); return
   }
-  if(cmd==='pin'){
-    const text=args.join(' ');
-    if(!text){addSys('Usage: /pin <text>','admin');return;}
-    await pinMessage(ADMIN_NAME,text);
-    addSys('Pinned: "'+text+'"','admin');return;
+  if (cmd==='pin') {
+    await doPin(username, args)
+    addSys('📌 Message pinned','admin'); return
   }
-  if(cmd==='unpin'){await fbDel(`rooms/${room}/pin`);addSys('Unpinned','admin');return;}
-  if(cmd==='rename'){
-    if(!target||!rest){addSys('Usage: /rename <user> <newname>','admin');return;}
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value:rest,ts:Date.now()});
-    addSys('Renamed '+target+' to '+rest,'admin');return;
+  const [target,...rest]=args.split(' ')
+  const value=rest.join(' ')
+  if (cmd==='rename') {
+    if (!target||!value){addSys('Usage: /rename <username> <newname>','admin');return}
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value,ts:Date.now()})
+    addSys(`⚡ Renamed ${target} → ${value}`,'admin'); return
   }
-  if(!target){addSys('Usage: /'+cmd+' <username>','admin');return;}
-  await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()});
-  addSys('Admin: /'+cmd+' on '+target,'admin');
+  if (!target){addSys(`Usage: /${cmd} <username>`,'admin');return}
+  await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
+  addSys(`⚡ /${cmd} → ${target}`,'admin')
 }
-joinBtn.onclick=async()=>{
-  const rawName=uInput.value.trim()||'Anon';
-  const rawRoom=rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase()||'general';
-  joinBtn.disabled=true;joinBtn.textContent='Checking...';joinErr.textContent='';
-  try{
-    const r=await fetch(fb('rooms/'+rawRoom+'/ping'));
-    if(!r.ok)throw new Error('HTTP '+r.status);
-  }catch(e){
-    joinErr.textContent='Cannot reach Firebase: '+e.message;
-    joinBtn.disabled=false;joinBtn.textContent='Join Room';return;
+
+async function isUsernameTaken(name) {
+  const p=await fbGet(`rooms/${room}/presence`)
+  if (!p) return false
+  const now=Date.now()
+  return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
+}
+
+joinBtn.onclick = async () => {
+  const raw=uInput.value.trim()||'Anon'
+  room=rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase()||'general'
+  joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
+
+  try {
+    const r=await fetch(fb(`rooms/${room}/ping`))
+    if (!r.ok) throw new Error('HTTP '+r.status)
+  } catch(e) {
+    joinErr.textContent='Cannot reach Firebase: '+e.message
+    joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
-  room=rawRoom;
-  const taken=await isUsernameTaken(rawName);
-  if(taken){
-    joinErr.textContent='"'+rawName+'" is already taken in this room. Pick another.';
-    joinBtn.disabled=false;joinBtn.textContent='Join Room';return;
+
+  if (raw!==ADMIN_NAME && await isUsernameTaken(raw)) {
+    joinErr.textContent=`"${raw}" is already taken. Pick another name.`
+    joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
-  username=rawName;joinTime=Date.now();
-  joinDiv.style.display='none';chatDiv.style.display='flex';
-  roomTitle.textContent='#'+room+(username===ADMIN_NAME?' [ADMIN]':'');
-  msgListener=fbListen('rooms/'+room+'/messages',({data,path})=>{
-    if(!data)return;
-    if(typeof data==='object'&&!data.u&&!data.type){Object.entries(data).forEach(([id,m])=>renderMsg(id,m));}
-    else{const id=path?.split('/').pop();if(id)renderMsg(id,data);}
-  });
-  pinListener=fbListen('rooms/'+room+'/pin',({data})=>showPin(data));
-  fbGet('rooms/'+room+'/pin').then(showPin);
-  typingListener=fbListen('rooms/'+room+'/typing',()=>renderTyping());
-  listenForCommands();
-  const up=()=>fbSet('rooms/'+room+'/presence/'+username,{name:username,ts:Date.now()});
-  await up();await refreshPresence();
-  presenceTimer=setInterval(()=>{up();refreshPresence();renderTyping();},8000);
-  addSys('You joined #'+room);
-  if(username===ADMIN_NAME)addSys('Commands: /kick /mute /unmute /rename <user> <name> /announce <msg> /pin <msg> /unpin','admin');
-  msgInput.focus();
-};
+
+  username=raw; joinTime=Date.now()
+  joinDiv.style.display='none'; chatDiv.style.display='flex'
+  roomTitle.textContent='#'+room+(username===ADMIN_NAME?' 👑':'')
+
+  msgListener=fbListen(`rooms/${room}/messages`,({data})=>{
+    if (!data) return
+    const entries=typeof data==='object'&&!data.u?Object.entries(data):[[null,data]]
+    entries.forEach(([id,m])=>{ if(!m)return; m.announce?renderAnnounce(id,m):renderMsg(id,m) })
+  })
+
+  pinListener=fbListen(`rooms/${room}/pin`,({data})=>showPin(data))
+  const cp=await fbGet(`rooms/${room}/pin`); showPin(cp)
+
+  typingListener=fbListen(`rooms/${room}/typing`,()=>renderTyping())
+  listenForCommands()
+
+  const up=()=>fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
+  await up(); await refreshPresence()
+  presenceTimer=setInterval(()=>{up();refreshPresence();renderTyping()},8000)
+
+  addSys('You joined #'+room)
+  if (username===ADMIN_NAME) addSys('Commands: /kick /mute /unmute <user> | /rename <user> <newname> | /announce <text> | /pin <text>','admin')
+  msgInput.focus()
+}
+
 msgInput.addEventListener('input',()=>{
-  fbSet('rooms/'+room+'/typing/'+username,Date.now());
-  clearTimeout(typingTimer);
-  typingTimer=setTimeout(()=>fbDel('rooms/'+room+'/typing/'+username),2500);
-});
-async function sendMessage(){
-  const text=msgInput.value.trim();if(!text)return;
-  msgInput.value='';clearTimeout(typingTimer);fbDel('rooms/'+room+'/typing/'+username);
-  if(text.startsWith('/')&&username===ADMIN_NAME){
-    const parts=text.slice(1).split(' ');
-    const cmd=parts[0].toLowerCase();
-    const args=parts.slice(1);
-    const valid=['kick','mute','unmute','rename','announce','pin','unpin'];
-    if(!valid.includes(cmd)){addSys('Unknown command','admin');return;}
-    await runAdminCommand(cmd,args);return;
+  fbSet(`rooms/${room}/typing/${username}`,Date.now())
+  clearTimeout(typingTimer)
+  typingTimer=setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`),2500)
+})
+
+async function sendMessage() {
+  const text=msgInput.value.trim(); if(!text)return
+  msgInput.value=''; clearTimeout(typingTimer)
+  fbDel(`rooms/${room}/typing/${username}`)
+
+  if (text.startsWith('/')&&username===ADMIN_NAME) {
+    const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
+    if (!['kick','mute','unmute','rename','announce','pin'].includes(cmd)){addSys('Unknown command','admin');return}
+    if (!args){addSys(`Usage: /${cmd} <args>`,'admin');return}
+    await runAdminCommand(cmd,args); return
   }
-  if(muted){addSys('You are muted.');return;}
-  const payload={u:username,t:text,ts:Date.now()};
-  if(replyingTo){payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t};}
-  clearReply();
-  await fbPost('rooms/'+room+'/messages',payload);
+
+  if (muted){addSys('You are muted.');return}
+  const payload={u:username,t:text,ts:Date.now()}
+  if (replyingTo){payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t}}
+  clearReply()
+  await fbPost(`rooms/${room}/messages`,payload)
 }
-sendBtn.onclick=sendMessage;
-msgInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
+sendBtn.onclick=sendMessage
+msgInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
+
 window.addEventListener('beforeunload',()=>{
-  fbDel('rooms/'+room+'/presence/'+username);
-  fbDel('rooms/'+room+'/typing/'+username);
-  clearInterval(presenceTimer);
-  msgListener?.close();cmdListener?.close();typingListener?.close();pinListener?.close();
-});
-uInput.focus();
+  fbDel(`rooms/${room}/presence/${username}`)
+  fbDel(`rooms/${room}/typing/${username}`)
+  clearInterval(presenceTimer)
+  msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close()
+})
+
+uInput.focus()
 </script>
 </body>
 </html>
