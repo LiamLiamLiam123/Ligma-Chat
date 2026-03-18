@@ -50,13 +50,29 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
 }
 #users-btn:hover { background: #444; }
-#pin-bar {
-  display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
-  padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
-  flex-shrink: 0; gap: 8px; align-items: center;
+#admin-btn {
+  display: none;
+  background: #3a1f00; border: none; color: #ffd97d; padding: 4px 10px;
+  border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
 }
-#pin-bar.show { display: flex; }
-#pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#admin-btn:hover { background: #4a2a00; }
+
+/* Admin panel */
+#admin-panel {
+  display: none; position: absolute; top: 42px; right: 12px;
+  background: #1e1200; border: 1px solid #7c4a00; border-radius: 10px;
+  padding: 14px 16px; width: 300px; z-index: 200;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6); overflow-y: auto; max-height: 70vh;
+}
+#admin-panel.open { display: block; }
+#admin-panel h3 { font-size: 0.8em; color: #ffd97d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.cmd-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid #2a1a00; }
+.cmd-row:last-child { border-bottom: none; padding-bottom: 0; }
+.cmd-name { font-size: 0.88em; font-weight: bold; color: #ffb347; font-family: monospace; }
+.cmd-desc { font-size: 0.78em; color: #aa8855; line-height: 1.4; }
+.cmd-example { font-size: 0.75em; color: #665533; font-family: monospace; margin-top: 2px; }
+
+/* Users panel */
 #users-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
@@ -70,6 +86,15 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #users-list li .dot { width: 8px; height: 8px; border-radius: 50%; background: #7dffaa; flex-shrink: 0; }
 #users-list li .uname { color: #ddd; }
 #users-list li .you { font-size: 0.75em; color: #666; }
+
+#pin-bar {
+  display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
+  padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
+  flex-shrink: 0; gap: 8px; align-items: center;
+}
+#pin-bar.show { display: flex; }
+#pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 #messages {
   flex: 1; overflow-y: auto; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 6px; min-height: 0;
@@ -81,6 +106,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .announce-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
 .announce-text  { font-size: 1.05em; font-weight: bold; color: #e9d5ff; }
 .announce-by    { font-size: 0.72em; color: #7c3aed; margin-top: 4px; }
+
 #reply-bar {
   display: none; background: #2a2a2a; border-left: 3px solid #ff4757;
   padding: 5px 10px; font-size: 0.8em; color: #aaa;
@@ -89,6 +115,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #reply-bar.show { display: flex; }
 #reply-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 #reply-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; padding: 0 4px; }
+
 .msg-wrap { display: flex; flex-direction: column; gap: 2px; max-width: 72%; }
 .msg-wrap.self-wrap  { align-self: flex-end;   align-items: flex-end; }
 .msg-wrap.other-wrap { align-self: flex-start; align-items: flex-start; }
@@ -114,7 +141,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   font-size: 11px; padding: 2px 7px; border-radius: 4px; cursor: pointer;
 }
 .action-btn:hover { background: #444; color: #fff; }
-.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; min-height: 4px; }
 .reaction-pill {
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px;
   padding: 1px 7px; font-size: 13px; cursor: pointer; user-select: none;
@@ -153,8 +180,47 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   <div class="top-bar">
     <div id="room-title"></div>
     <div id="conn-pill">connecting…</div>
-    <button id="users-btn">👥 Users <span id="user-count"></span></button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="admin-btn">👑 Admin</button>
+      <button id="users-btn">👥 Users <span id="user-count"></span></button>
+    </div>
   </div>
+
+  <!-- Admin panel - only shown to admin -->
+  <div id="admin-panel">
+    <h3>👑 Admin Commands</h3>
+    <div class="cmd-row">
+      <div class="cmd-name">/kick &lt;username&gt;</div>
+      <div class="cmd-desc">Immediately removes a user from the room.</div>
+      <div class="cmd-example">e.g. /kick John</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/mute &lt;username&gt;</div>
+      <div class="cmd-desc">Stops a user from sending messages.</div>
+      <div class="cmd-example">e.g. /mute John</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/unmute &lt;username&gt;</div>
+      <div class="cmd-desc">Lets a muted user talk again.</div>
+      <div class="cmd-example">e.g. /unmute John</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/rename &lt;username&gt; &lt;newname&gt;</div>
+      <div class="cmd-desc">Changes another user's display name.</div>
+      <div class="cmd-example">e.g. /rename John Dave</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/announce &lt;text&gt;</div>
+      <div class="cmd-desc">Sends a big highlighted announcement to everyone.</div>
+      <div class="cmd-example">e.g. /announce Welcome everyone!</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/pin &lt;text&gt;</div>
+      <div class="cmd-desc">Pins a message to the top of the chat. You can also hover any message and click 📌.</div>
+      <div class="cmd-example">e.g. /pin Rules: be nice!</div>
+    </div>
+  </div>
+
   <div id="pin-bar">
     <span>📌</span>
     <span class="pin-text" id="pin-text"></span>
@@ -178,8 +244,15 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <script>
 const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
 const ADMIN_NAME = 'Admin:Liam'
-const REACTIONS  = ['👍','❤️','😂','😮','😢']
-const BAD_WORDS  = ['fuck','shit','ass','bitch','cunt','dick','pussy','bastard','damn','crap']
+// Use short keys instead of emojis in Firebase paths to avoid URL encoding issues
+const REACTIONS  = [
+  { emoji:'👍', key:'like' },
+  { emoji:'❤️', key:'heart' },
+  { emoji:'😂', key:'lol' },
+  { emoji:'😮', key:'wow' },
+  { emoji:'😢', key:'sad' },
+]
+const BAD_WORDS = ['fuck','shit','ass','bitch','cunt','dick','pussy','bastard','damn','crap']
 
 function filterProfanity(text) {
   let out = text
@@ -198,11 +271,16 @@ const usersList=$('users-list'), userCount=$('user-count'), pinBar=$('pin-bar')
 const pinText=$('pin-text'), messagesDiv=$('messages'), replyBar=$('reply-bar')
 const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
 const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
+const adminBtn=$('admin-btn'), adminPanel=$('admin-panel')
 
-usersBtn.onclick = () => usersPanel.classList.toggle('open')
-document.addEventListener('click', e => { if (!usersPanel.contains(e.target)&&e.target!==usersBtn) usersPanel.classList.remove('open') })
+// Panel toggles — close each other
+usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
+adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
+document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
+;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
 replyCancel.onclick = clearReply
 
+// ── Firebase REST ──
 const fb      = p    => `${FB}/${p}.json`
 const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
 const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
@@ -210,24 +288,83 @@ const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
 const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
 const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
 
-function fbListen(path, cb) {
+// ── SSE listener ──
+// BUG FIX: handle both 'put' (full snapshot) and 'patch' (partial update) correctly
+function fbListen(path, onPut, onPatch) {
   const es = new EventSource(fb(path))
-  es.addEventListener('put',   e=>{ try{cb(JSON.parse(e.data))}catch{} })
-  es.addEventListener('patch', e=>{ try{cb(JSON.parse(e.data))}catch{} })
-  es.onopen  = ()=>{ connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
-  es.onerror = ()=>{ connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
+  es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
+  es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('patch err',err) } })
+  es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
+  es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
   return es
 }
 
+// ── Message cache: msgId -> full message object ──
+// We keep a local cache so patch updates can be merged properly
+const msgCache = {}
 const seen = new Set()
 
+// BUG FIX: properly handle initial snapshot (path='/') vs incremental updates
+function handleMsgPut({ path, data }) {
+  if (!data) return
+  if (path === '/' || path === '') {
+    // Full snapshot — iterate all messages
+    Object.entries(data).forEach(([id, m]) => {
+      if (!m) return
+      msgCache[id] = m
+      if (m.announce) renderAnnounce(id, m)
+      else renderMsg(id, m)
+    })
+  } else {
+    // Single message added (path = '/KEY')
+    const id = path.replace(/^\//, '')
+    if (!data || typeof data !== 'object') return
+    msgCache[id] = data
+    if (data.announce) renderAnnounce(id, data)
+    else renderMsg(id, data)
+  }
+}
+
+// BUG FIX: patch events come in as { path: '/KEY/field', data: value }
+// We need to merge into our cache and re-render that message
+function handleMsgPatch({ path, data }) {
+  if (!data) return
+  // path could be '/' (multiple updates) or '/KEY' or '/KEY/subfield'
+  if (path === '/' || path === '') {
+    // Multiple top-level changes
+    Object.entries(data).forEach(([id, changes]) => {
+      if (!changes) return
+      msgCache[id] = { ...(msgCache[id]||{}), ...changes }
+      updateMsg(id, msgCache[id])
+    })
+  } else {
+    const parts = path.replace(/^\//, '').split('/')
+    const id = parts[0]
+    if (!msgCache[id]) return
+    if (parts.length === 1) {
+      // Update to entire message
+      msgCache[id] = { ...msgCache[id], ...(data||{}) }
+    } else {
+      // Deep update e.g. /KEY/reactions/username/heart
+      // Re-fetch this message to get the latest state
+      fbGet(`rooms/${room}/messages/${id}`).then(m => {
+        if (!m) return
+        msgCache[id] = m
+        updateMsg(id, m)
+      })
+      return
+    }
+    updateMsg(id, msgCache[id])
+  }
+}
+
 function renderMsg(id, m) {
-  if (!m||!m.u||!m.t) return
+  if (!m || !m.u || !m.t) return
   if (m.ts < joinTime) return
-  if (seen.has(id)) { updateMsg(id,m); return }
+  if (seen.has(id)) { updateMsg(id, m); return }
   seen.add(id)
 
-  const isMe = m.u===username
+  const isMe = m.u === username
   const wrap = document.createElement('div')
   wrap.className = `msg-wrap ${isMe?'self-wrap':'other-wrap'}`
   wrap.dataset.id = id
@@ -243,108 +380,178 @@ function renderMsg(id, m) {
   bubble.className = `msg ${isMe?'self':'other'}`
   bubble.dataset.id = id
   if (m.deleted) bubble.classList.add('deleted')
+
   const name = document.createElement('div')
-  name.className='name'; name.textContent=m.u
+  name.className = 'name'
+  name.textContent = m.u
   bubble.appendChild(name)
+
   const body = document.createElement('div')
-  body.className='msg-body'
+  body.className = 'msg-body'
   body.textContent = m.deleted ? '🚫 Message deleted' : filterProfanity(m.t)
   bubble.appendChild(body)
   wrap.appendChild(bubble)
 
+  // Reactions display
   const rd = document.createElement('div')
-  rd.className='reactions'; rd.dataset.id=id
-  renderReactions(rd, m.reactions||{})
+  rd.className = 'reactions'
+  rd.dataset.id = id
+  renderReactions(rd, m.reactions || {})
   wrap.appendChild(rd)
 
+  // Reaction picker
   const picker = document.createElement('div')
-  picker.className='reaction-picker'
-  REACTIONS.forEach(e=>{ const b=document.createElement('button'); b.className='react-opt'; b.textContent=e; b.onclick=()=>toggleReaction(id,e); picker.appendChild(b) })
+  picker.className = 'reaction-picker'
+  REACTIONS.forEach(({emoji, key}) => {
+    const b = document.createElement('button')
+    b.className = 'react-opt'
+    b.textContent = emoji
+    b.onclick = () => toggleReaction(id, key, emoji)
+    picker.appendChild(b)
+  })
   wrap.appendChild(picker)
 
+  // Action buttons
   const actions = document.createElement('div')
-  actions.className='msg-actions'
-  const replyBtn=document.createElement('button'); replyBtn.className='action-btn'; replyBtn.textContent='↩ Reply'; replyBtn.onclick=()=>setReply(id,m.u,m.t); actions.appendChild(replyBtn)
-  if ((isMe||username===ADMIN_NAME)&&!m.deleted) {
-    const delBtn=document.createElement('button'); delBtn.className='action-btn'; delBtn.textContent='🗑 Delete'; delBtn.onclick=()=>fbPatch(`rooms/${room}/messages/${id}`,{deleted:true}); actions.appendChild(delBtn)
+  actions.className = 'msg-actions'
+
+  const replyBtn = document.createElement('button')
+  replyBtn.className = 'action-btn'
+  replyBtn.textContent = '↩ Reply'
+  replyBtn.onclick = () => setReply(id, m.u, m.t)
+  actions.appendChild(replyBtn)
+
+  if ((isMe || username===ADMIN_NAME) && !m.deleted) {
+    const delBtn = document.createElement('button')
+    delBtn.className = 'action-btn'
+    delBtn.textContent = '🗑 Delete'
+    delBtn.onclick = () => fbPatch(`rooms/${room}/messages/${id}`, {deleted:true})
+    actions.appendChild(delBtn)
   }
-  if (username===ADMIN_NAME&&!m.deleted) {
-    const pinBtn=document.createElement('button'); pinBtn.className='action-btn'; pinBtn.textContent='📌 Pin'; pinBtn.onclick=()=>doPin(m.u,m.t); actions.appendChild(pinBtn)
+  if (username===ADMIN_NAME && !m.deleted) {
+    const pinBtn = document.createElement('button')
+    pinBtn.className = 'action-btn'
+    pinBtn.textContent = '📌 Pin'
+    pinBtn.onclick = () => doPin(m.u, m.t)
+    actions.appendChild(pinBtn)
   }
   wrap.appendChild(actions)
   messagesDiv.appendChild(wrap)
-  messagesDiv.scrollTop=messagesDiv.scrollHeight
+  messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
 function renderAnnounce(id, m) {
-  if (!m||m.ts<joinTime||seen.has(id)) return
+  if (!m || m.ts < joinTime || seen.has(id)) return
   seen.add(id)
-  const wrap=document.createElement('div')
-  wrap.className='announce-wrap'
-  wrap.innerHTML=`<div class="announce-label">📢 Announcement</div><div class="announce-text">${filterProfanity(m.t)}</div><div class="announce-by">— ${m.u}</div>`
+  const wrap = document.createElement('div')
+  wrap.className = 'announce-wrap'
+  wrap.innerHTML = `<div class="announce-label">📢 Announcement</div><div class="announce-text">${filterProfanity(m.t)}</div><div class="announce-by">— ${m.u}</div>`
   messagesDiv.appendChild(wrap)
-  messagesDiv.scrollTop=messagesDiv.scrollHeight
+  messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
 function updateMsg(id, m) {
-  const b=messagesDiv.querySelector(`.msg[data-id="${id}"]`)
-  if (b&&m.deleted) { b.querySelector('.msg-body').textContent='🚫 Message deleted'; b.classList.add('deleted') }
-  const rd=messagesDiv.querySelector(`.reactions[data-id="${id}"]`)
-  if (rd) renderReactions(rd, m.reactions||{})
+  if (!m) return
+  // Update deleted state
+  const bubble = messagesDiv.querySelector(`.msg[data-id="${id}"]`)
+  if (bubble && m.deleted) {
+    const body = bubble.querySelector('.msg-body')
+    if (body) body.textContent = '🚫 Message deleted'
+    bubble.classList.add('deleted')
+  }
+  // Update reactions
+  const rd = messagesDiv.querySelector(`.reactions[data-id="${id}"]`)
+  if (rd) renderReactions(rd, m.reactions || {})
 }
 
+// BUG FIX: reactions now use safe string keys (like, heart, lol) not emoji as path keys
 function renderReactions(div, reactions) {
-  div.innerHTML=''
-  const counts={}, mine=new Set()
-  Object.entries(reactions).forEach(([uid,emojis])=>{ Object.keys(emojis).forEach(e=>{ counts[e]=(counts[e]||0)+1; if(uid===username)mine.add(e) }) })
-  Object.entries(counts).forEach(([emoji,count])=>{ const p=document.createElement('span'); p.className='reaction-pill'+(mine.has(emoji)?' mine':''); p.textContent=`${emoji} ${count}`; p.onclick=()=>toggleReaction(div.dataset.id,emoji); div.appendChild(p) })
+  div.innerHTML = ''
+  const counts = {}, mine = new Set()
+  Object.entries(reactions).forEach(([uid, keys]) => {
+    if (!keys || typeof keys !== 'object') return
+    Object.keys(keys).forEach(key => {
+      counts[key] = (counts[key]||0) + 1
+      if (uid === username) mine.add(key)
+    })
+  })
+  REACTIONS.forEach(({emoji, key}) => {
+    if (!counts[key]) return
+    const pill = document.createElement('span')
+    pill.className = 'reaction-pill' + (mine.has(key) ? ' mine' : '')
+    pill.textContent = `${emoji} ${counts[key]}`
+    pill.onclick = () => toggleReaction(div.dataset.id, key, emoji)
+    div.appendChild(pill)
+  })
 }
 
 function addSys(text, cls='sys') {
-  const d=document.createElement('div'); d.className=`msg ${cls}`; d.textContent=text
-  messagesDiv.appendChild(d); messagesDiv.scrollTop=messagesDiv.scrollHeight
+  const d = document.createElement('div')
+  d.className = `msg ${cls}`
+  d.textContent = text
+  messagesDiv.appendChild(d)
+  messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
 function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
 function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
 
-async function toggleReaction(msgId, emoji) {
-  const path=`rooms/${room}/messages/${msgId}/reactions/${username}/${emoji}`
-  const ex=await fbGet(path); if(ex) await fbDel(path); else await fbSet(path,true)
+// BUG FIX: use safe ASCII key in path, not raw emoji
+async function toggleReaction(msgId, key, emoji) {
+  const path = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
+  // Check current cache first to avoid round-trip
+  const cached = msgCache[msgId]
+  const currentlySet = cached?.reactions?.[username]?.[key]
+  if (currentlySet) {
+    await fbDel(path)
+  } else {
+    await fbSet(path, true)
+  }
+  // Re-fetch and update to ensure UI is correct
+  const updated = await fbGet(`rooms/${room}/messages/${msgId}`)
+  if (updated) {
+    msgCache[msgId] = updated
+    updateMsg(msgId, updated)
+  }
 }
 
-async function doPin(u, t) {
-  await fbSet(`rooms/${room}/pin`,{u,t,ts:Date.now()})
-}
+async function doPin(u, t) { await fbSet(`rooms/${room}/pin`, {u, t, ts:Date.now()}) }
 
 function showPin(data) {
   if (!data||!data.t) { pinBar.classList.remove('show'); return }
-  pinText.textContent=`${data.u}: ${data.t}`; pinBar.classList.add('show')
+  pinText.textContent = `${data.u}: ${data.t}`
+  pinBar.classList.add('show')
 }
 
 async function refreshPresence() {
-  const data=await fbGet(`rooms/${room}/presence`)
-  const now=Date.now()
-  const online=data?Object.values(data).filter(u=>now-u.ts<15000):[]
-  userCount.textContent=online.length?`(${online.length})`:''
-  usersList.innerHTML=''
-  if (!online.length) { const li=document.createElement('li'); li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'; usersList.appendChild(li); return }
-  online.forEach(u=>{ const li=document.createElement('li'); li.innerHTML=`<span class="dot"></span><span class="uname">${u.name}</span>${u.name===username?'<span class="you">(you)</span>':''}`; usersList.appendChild(li) })
+  const data = await fbGet(`rooms/${room}/presence`)
+  const now = Date.now()
+  const online = data ? Object.values(data).filter(u=>now-u.ts<15000) : []
+  userCount.textContent = online.length ? `(${online.length})` : ''
+  usersList.innerHTML = ''
+  if (!online.length) {
+    const li=document.createElement('li'); li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'; usersList.appendChild(li); return
+  }
+  online.forEach(u => {
+    const li = document.createElement('li')
+    li.innerHTML = `<span class="dot"></span><span class="uname">${u.name}</span>${u.name===username?'<span class="you">(you)</span>':''}`
+    usersList.appendChild(li)
+  })
 }
 
 async function renderTyping() {
-  const data=await fbGet(`rooms/${room}/typing`)
-  if (!data){typingDiv.textContent='';return}
-  const now=Date.now()
-  const who=Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
-  typingDiv.textContent=who.length?who.join(', ')+(who.length===1?' is typing…':' are typing…'):''
+  const data = await fbGet(`rooms/${room}/typing`)
+  if (!data) { typingDiv.textContent=''; return }
+  const now = Date.now()
+  const who = Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
+  typingDiv.textContent = who.length ? who.join(', ')+(who.length===1?' is typing…':' are typing…') : ''
 }
 
 function listenForCommands() {
   cmdListener?.close()
-  cmdListener=fbListen(`rooms/${room}/commands/${username}`,({data})=>{
+  cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
     if (!data||!data.cmd) return
-    const {cmd,by,value}=data
+    const {cmd,by,value} = data
     if (cmd==='kick')   { alert(`Kicked by ${by}`); fbDel(`rooms/${room}/commands/${username}`); location.reload() }
     if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
     if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
@@ -360,40 +567,35 @@ function listenForCommands() {
 }
 
 async function runAdminCommand(cmd, args) {
-  if (cmd==='announce') {
-    await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true})
-    addSys('📢 Announcement sent','admin'); return
-  }
-  if (cmd==='pin') {
-    await doPin(username, args)
-    addSys('📌 Message pinned','admin'); return
-  }
-  const [target,...rest]=args.split(' ')
-  const value=rest.join(' ')
+  if (cmd==='announce') { await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true}); addSys('📢 Sent','admin'); return }
+  if (cmd==='pin')      { await doPin(username,args); addSys('📌 Pinned','admin'); return }
+  const [target,...rest] = args.split(' ')
+  const value = rest.join(' ')
   if (cmd==='rename') {
-    if (!target||!value){addSys('Usage: /rename <username> <newname>','admin');return}
+    if (!target||!value) { addSys('Usage: /rename <user> <newname>','admin'); return }
     await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value,ts:Date.now()})
     addSys(`⚡ Renamed ${target} → ${value}`,'admin'); return
   }
-  if (!target){addSys(`Usage: /${cmd} <username>`,'admin');return}
+  if (!target) { addSys(`Usage: /${cmd} <username>`,'admin'); return }
   await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
   addSys(`⚡ /${cmd} → ${target}`,'admin')
 }
 
 async function isUsernameTaken(name) {
-  const p=await fbGet(`rooms/${room}/presence`)
+  const p = await fbGet(`rooms/${room}/presence`)
   if (!p) return false
-  const now=Date.now()
+  const now = Date.now()
   return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
 }
 
+// ── JOIN ──
 joinBtn.onclick = async () => {
-  const raw=uInput.value.trim()||'Anon'
-  room=rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase()||'general'
+  const raw = uInput.value.trim() || 'Anon'
+  room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
   joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
   try {
-    const r=await fetch(fb(`rooms/${room}/ping`))
+    const r = await fetch(fb(`rooms/${room}/ping`))
     if (!r.ok) throw new Error('HTTP '+r.status)
   } catch(e) {
     joinErr.textContent='Cannot reach Firebase: '+e.message
@@ -407,58 +609,62 @@ joinBtn.onclick = async () => {
 
   username=raw; joinTime=Date.now()
   joinDiv.style.display='none'; chatDiv.style.display='flex'
-  roomTitle.textContent='#'+room+(username===ADMIN_NAME?' 👑':'')
+  roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
 
-  msgListener=fbListen(`rooms/${room}/messages`,({data})=>{
-    if (!data) return
-    const entries=typeof data==='object'&&!data.u?Object.entries(data):[[null,data]]
-    entries.forEach(([id,m])=>{ if(!m)return; m.announce?renderAnnounce(id,m):renderMsg(id,m) })
-  })
+  // Only show admin button for admin
+  if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  pinListener=fbListen(`rooms/${room}/pin`,({data})=>showPin(data))
-  const cp=await fbGet(`rooms/${room}/pin`); showPin(cp)
+  // BUG FIX: use separate put/patch handlers for messages
+  msgListener = fbListen(
+    `rooms/${room}/messages`,
+    handleMsgPut,   // put handler
+    handleMsgPatch  // patch handler
+  )
 
-  typingListener=fbListen(`rooms/${room}/typing`,()=>renderTyping())
+  pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
+  const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
+  typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
   listenForCommands()
 
-  const up=()=>fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
+  const up = () => fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
   await up(); await refreshPresence()
-  presenceTimer=setInterval(()=>{up();refreshPresence();renderTyping()},8000)
+  presenceTimer = setInterval(()=>{ up(); refreshPresence(); renderTyping() }, 8000)
 
   addSys('You joined #'+room)
-  if (username===ADMIN_NAME) addSys('Commands: /kick /mute /unmute <user> | /rename <user> <newname> | /announce <text> | /pin <text>','admin')
   msgInput.focus()
 }
 
-msgInput.addEventListener('input',()=>{
-  fbSet(`rooms/${room}/typing/${username}`,Date.now())
+// ── TYPING ──
+msgInput.addEventListener('input', () => {
+  fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
-  typingTimer=setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`),2500)
+  typingTimer = setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
+// ── SEND ──
 async function sendMessage() {
   const text=msgInput.value.trim(); if(!text)return
   msgInput.value=''; clearTimeout(typingTimer)
   fbDel(`rooms/${room}/typing/${username}`)
 
-  if (text.startsWith('/')&&username===ADMIN_NAME) {
+  if (text.startsWith('/') && username===ADMIN_NAME) {
     const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
-    if (!['kick','mute','unmute','rename','announce','pin'].includes(cmd)){addSys('Unknown command','admin');return}
-    if (!args){addSys(`Usage: /${cmd} <args>`,'admin');return}
+    if (!['kick','mute','unmute','rename','announce','pin'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
+    if (!args) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
     await runAdminCommand(cmd,args); return
   }
 
-  if (muted){addSys('You are muted.');return}
-  const payload={u:username,t:text,ts:Date.now()}
-  if (replyingTo){payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t}}
+  if (muted) { addSys('You are muted.'); return }
+  const payload = {u:username, t:text, ts:Date.now()}
+  if (replyingTo) { payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t} }
   clearReply()
-  await fbPost(`rooms/${room}/messages`,payload)
+  await fbPost(`rooms/${room}/messages`, payload)
 }
 
-sendBtn.onclick=sendMessage
-msgInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
+sendBtn.onclick = sendMessage
+msgInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
 
-window.addEventListener('beforeunload',()=>{
+window.addEventListener('beforeunload', () => {
   fbDel(`rooms/${room}/presence/${username}`)
   fbDel(`rooms/${room}/typing/${username}`)
   clearInterval(presenceTimer)
