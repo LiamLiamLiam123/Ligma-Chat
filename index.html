@@ -325,36 +325,31 @@ function handleMsgPut({ path, data }) {
   }
 }
 
-// BUG FIX: patch events come in as { path: '/KEY/field', data: value }
-// We need to merge into our cache and re-render that message
+// patch events come in as { path: '/KEY/field', data: value }
+// For any patch that touches a message we know about, re-fetch that message fully
 function handleMsgPatch({ path, data }) {
-  if (!data) return
-  // path could be '/' (multiple updates) or '/KEY' or '/KEY/subfield'
+  if (data === null || data === undefined) return
   if (path === '/' || path === '') {
-    // Multiple top-level changes
+    // Multiple top-level message changes
     Object.entries(data).forEach(([id, changes]) => {
       if (!changes) return
-      msgCache[id] = { ...(msgCache[id]||{}), ...changes }
-      updateMsg(id, msgCache[id])
-    })
-  } else {
-    const parts = path.replace(/^\//, '').split('/')
-    const id = parts[0]
-    if (!msgCache[id]) return
-    if (parts.length === 1) {
-      // Update to entire message
-      msgCache[id] = { ...msgCache[id], ...(data||{}) }
-    } else {
-      // Deep update e.g. /KEY/reactions/username/heart
-      // Re-fetch this message to get the latest state
+      // Re-fetch to get full updated state
       fbGet(`rooms/${room}/messages/${id}`).then(m => {
         if (!m) return
         msgCache[id] = m
-        updateMsg(id, m)
+        if (seen.has(id)) updateMsg(id, m)
       })
-      return
-    }
-    updateMsg(id, msgCache[id])
+    })
+  } else {
+    // Any depth: /KEY, /KEY/reactions, /KEY/reactions/user/heart etc
+    const id = path.replace(/^\//, '').split('/')[0]
+    if (!id) return
+    // Re-fetch the whole message so we always have fresh reaction data
+    fbGet(`rooms/${room}/messages/${id}`).then(m => {
+      if (!m) return
+      msgCache[id] = m
+      if (seen.has(id)) updateMsg(id, m)
+    })
   }
 }
 
@@ -594,6 +589,18 @@ joinBtn.onclick = async () => {
   room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
   joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
+  // Username validation
+  if (raw !== ADMIN_NAME) {
+    if (/\s/.test(raw)) {
+      joinErr.textContent='Username cannot contain spaces.'
+      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+    }
+    if (raw.length > 25) {
+      joinErr.textContent='Username must be 25 characters or less.'
+      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+    }
+  }
+
   try {
     const r = await fetch(fb(`rooms/${room}/ping`))
     if (!r.ok) throw new Error('HTTP '+r.status)
@@ -671,6 +678,9 @@ window.addEventListener('beforeunload', () => {
   msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close()
 })
 
+uInput.setAttribute("maxlength","25")
+uInput.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault() })
+uInput.addEventListener("input", () => { uInput.value = uInput.value.replace(/\s/g, "") })
 uInput.focus()
 </script>
 </body>
