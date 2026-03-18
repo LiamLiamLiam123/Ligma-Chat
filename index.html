@@ -344,8 +344,6 @@ usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open
 adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
 document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
 ;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
-replyCancel.onclick = clearReply
-
 // ── Firebase REST ──
 const fb      = p    => `${FB}/${p}.json`
 const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
@@ -361,7 +359,7 @@ function fbListen(path, onPut, onPatch, primary=false) {
   es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
   es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('patch err',err) } })
   if (primary) {
-    es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
+    es.onopen  = () => { connPill.textContent='connected'; connPill.className='ok'; const locked=chatLocked&&username!==ADMIN_NAME; msgInput.disabled=locked; sendBtn.disabled=locked }
     es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
   }
   return es
@@ -565,6 +563,7 @@ function addSys(text, cls='sys') {
 
 function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
 function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
+replyCancel.onclick = clearReply
 
 // BUG FIX: use safe ASCII key in path, not raw emoji
 async function toggleReaction(msgId, key, emoji) {
@@ -843,7 +842,7 @@ joinBtn.onclick = async () => {
   // Dedicated reactions listener — watches the entire reactions subtree
   // This is the most reliable way to sync reactions to all users in real time
   reactListener = fbListen(`rooms/${room}/reactions`, ({ path, data }) => {
-    if (data === null && path === '/') return
+    if (!data && !path) return
     const msgId = (path || '').replace(/^\//, '').split('/')[0]
     if (!msgId) return
     // Only update UI if this message is actually rendered on screen
@@ -855,13 +854,13 @@ joinBtn.onclick = async () => {
     })
   })
 
-  pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
+  pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data), ({data}) => showPin(data))
   const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
   typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
   listenForCommands()
 
   // Global slowmode listener
-  slowmodeListener = fbListen(`rooms/${room}/slowmode`, ({data}) => {
+  const handleSlowmode = ({data}) => {
     const secs = data?.secs ?? 0
     slowmodeSeconds = secs
     const bar = document.getElementById('slowmode-bar')
@@ -869,7 +868,8 @@ joinBtn.onclick = async () => {
     if (secs > 0) { lbl.textContent = `Slowmode: ${secs}s cooldown between messages`; bar.style.display='block' }
     else { bar.style.display='none' }
     if (data && data.by !== username) addSys(`⏱ Slowmode ${secs>0?'set to '+secs+'s':'disabled'} by admin`)
-  })
+  }
+  slowmodeListener = fbListen(`rooms/${room}/slowmode`, handleSlowmode, handleSlowmode)
   // Load current slowmode
   fbGet(`rooms/${room}/slowmode`).then(d => {
     if (d && d.secs > 0) {
@@ -887,16 +887,17 @@ joinBtn.onclick = async () => {
   presenceTimer = setInterval(()=>{ up(); refreshPresence() }, 8000)
 
   // Lock listener
-  lockListener = fbListen(`rooms/${room}/lock`, ({data}) => {
+  const handleLock = ({data}) => {
     const locked = data?.locked ?? false
     chatLocked = locked
     const pill = document.getElementById('lock-pill')
     pill.style.display = locked ? 'block' : 'none'
-    if (locked) { msgInput.disabled=true; sendBtn.disabled=true }
-    else if (username===ADMIN_NAME) { msgInput.disabled=false; sendBtn.disabled=false }
-    else { msgInput.disabled=false; sendBtn.disabled=false }
+    const shouldDisable = locked && username !== ADMIN_NAME
+    msgInput.disabled = shouldDisable
+    sendBtn.disabled  = shouldDisable
     if (data && data.by !== username) addSys(locked ? '🔒 Chat has been locked by admin' : '🔓 Chat has been unlocked','admin')
-  })
+  }
+  lockListener = fbListen(`rooms/${room}/lock`, handleLock, handleLock)
   fbGet(`rooms/${room}/lock`).then(d => {
     if (d?.locked) {
       chatLocked = true
@@ -906,12 +907,13 @@ joinBtn.onclick = async () => {
   })
 
   // Topic listener
-  topicListener = fbListen(`rooms/${room}/topic`, ({data}) => {
+  const handleTopic = ({data}) => {
     const bar = document.getElementById('topic-bar')
     const lbl = document.getElementById('topic-label')
     if (data?.text) { lbl.textContent=data.text; bar.style.display='block' }
     else bar.style.display='none'
-  })
+  }
+  topicListener = fbListen(`rooms/${room}/topic`, handleTopic, handleTopic)
   fbGet(`rooms/${room}/topic`).then(d => {
     if (d?.text) {
       document.getElementById('topic-label').textContent = d.text
