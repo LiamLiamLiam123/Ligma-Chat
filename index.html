@@ -623,51 +623,55 @@ async function renderTyping() {
 function listenForCommands() {
   cmdListener?.close()
   cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
-    if (!data||!data.cmd) return
-    const {cmd,by,value,ts} = data
-    // Ignore stale commands issued before we joined (e.g. old kick)
+    if (!data || !data.cmd) return
+    const {cmd, by, value, ts, secs} = data
+    // Ignore stale commands issued before we joined
     if (ts && ts < joinTime) { fbDel(`rooms/${room}/commands/${username}`); return }
-    if (cmd==='kick')   { alert(`Kicked by ${by}`); fbDel(`rooms/${room}/commands/${username}`); location.reload() }
-    if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
-    if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
-    if (cmd==='warn') {
-      // Show warning as a prominent red system message only visible to this user
+
+    if (cmd === 'kick') {
+      fbDel(`rooms/${room}/commands/${username}`)
+      alert(`You were kicked by ${by}`)
+      location.reload()
+    } else if (cmd === 'mute') {
+      muted = true
+      addSys(`You were muted by ${by}`, 'admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+    } else if (cmd === 'unmute') {
+      muted = false
+      addSys(`You were unmuted by ${by}`, 'admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+    } else if (cmd === 'warn') {
       const warnDiv = document.createElement('div')
-      warnDiv.style.cssText = 'align-self:stretch;background:#3a0000;border:1px solid #ff4757;border-radius:8px;padding:8px 12px;font-size:0.85em;color:#ff9fab;margin:2px 0;'
-      warnDiv.innerHTML = `<b>⚠️ Warning from ${by}:</b> ${value.replace(/</g,'&lt;')}`
+      warnDiv.style.cssText = 'align-self:stretch;background:#3a0000;border:1px solid #ff4757;border-radius:8px;padding:8px 12px;font-size:0.85em;color:#ff9fab;margin:4px 0;'
+      const safeVal = (value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      const safeBy  = (by||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      warnDiv.innerHTML = `<b>⚠️ Warning from ${safeBy}:</b> ${safeVal}`
       messagesDiv.appendChild(warnDiv)
       messagesDiv.scrollTop = messagesDiv.scrollHeight
       fbDel(`rooms/${room}/commands/${username}`)
-      return
-    }
-    if (cmd==='color') {
-      userColors[username] = value === 'reset' ? undefined : value
+    } else if (cmd === 'color') {
+      const col = value || 'reset'
+      userColors[username] = col === 'reset' ? undefined : col
       document.querySelectorAll('.msg .name').forEach(n => {
         if (n.textContent === username) {
-          if (value === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
-          else { n.style.color=value; n.classList.add('name-colored') }
+          if (col === 'reset') { n.style.color = ''; n.classList.remove('name-colored') }
+          else { n.style.color = col; n.classList.add('name-colored') }
         }
       })
-      if (value !== 'reset') addSys(`🎨 Your name color was changed`,'admin')
-      else addSys(`🎨 Your name color was reset`,'admin')
+      addSys(col !== 'reset' ? '🎨 Your name color was changed' : '🎨 Your name color was reset', 'admin')
       fbDel(`rooms/${room}/commands/${username}`)
-      return
-    }
-    if (cmd==='userslow') {
-      const s = data.secs || 0
+    } else if (cmd === 'userslow') {
+      const s = secs || 0
       userSlowmode[username] = s
-      if (s > 0) addSys(`⏱ You have a ${s}s cooldown between messages`,'admin')
-      else addSys('⏱ Your slowmode has been removed','admin')
+      addSys(s > 0 ? `⏱ You have a ${s}s cooldown between messages` : '⏱ Your slowmode has been removed', 'admin')
       fbDel(`rooms/${room}/commands/${username}`)
-      return
-    }
-    if (cmd==='rename') {
-      const old=username; username=value
-      // Carry over any per-user slowmode to the new username key
-      if (userSlowmode[old] !== undefined) { userSlowmode[username]=userSlowmode[old]; delete userSlowmode[old] }
+    } else if (cmd === 'rename') {
+      const old = username
+      username = value
+      if (userSlowmode[old] !== undefined) { userSlowmode[username] = userSlowmode[old]; delete userSlowmode[old] }
       fbDel(`rooms/${room}/presence/${old}`)
-      fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
-      addSys(`Renamed to "${value}" by ${by}`,'admin')
+      fbSet(`rooms/${room}/presence/${username}`, {name: username, ts: Date.now()})
+      addSys(`Renamed to "${value}" by ${by}`, 'admin')
       fbDel(`rooms/${room}/commands/${old}`)
       listenForCommands()
     }
@@ -747,23 +751,20 @@ async function runAdminCommand(cmd, args) {
 
   // /color <username> <color> — change name color
   if (cmd==='color') {
+    if (!target) { addSys('Usage: /color <username> <color>','admin'); return }
     const color = value || 'reset'
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'color',by:username,value:color,ts:Date.now()})
-    // Also store in room so new joiners see the color
+    // Store in Firebase so the target user and new joiners see it
     if (color === 'reset') await fbDel(`rooms/${room}/colors/${target}`)
     else await fbSet(`rooms/${room}/colors/${target}`, color)
+    // Send command to target so their client updates live
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'color',by:username,value:color,ts:Date.now()})
+    // Update admin's own view of that user's messages immediately
     userColors[target] = color === 'reset' ? undefined : color
-    // Update any already-rendered messages from this user
-    document.querySelectorAll('.msg .name').forEach(el => {
-      const wrap = el.closest('.msg-wrap')
-      if (!wrap) return
-      const msgs = wrap.querySelectorAll('.msg .name')
-      msgs.forEach(n => {
-        if (n.textContent === target) {
-          if (color === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
-          else { n.style.color=color; n.classList.add('name-colored') }
-        }
-      })
+    document.querySelectorAll('.msg .name').forEach(n => {
+      if (n.textContent === target) {
+        if (color === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
+        else { n.style.color=color; n.classList.add('name-colored') }
+      }
     })
     addSys(`🎨 ${target}'s color set to ${color}`,'admin'); return
   }
