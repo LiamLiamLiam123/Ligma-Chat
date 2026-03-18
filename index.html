@@ -17,6 +17,8 @@ body {
   overflow: hidden;
 }
 h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
+
+/* ── JOIN ── */
 #join {
   flex: 1; display: flex; flex-direction: column;
   justify-content: center; align-items: center; gap: 12px; width: 100%;
@@ -29,14 +31,18 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   padding: 10px 28px; border: none; border-radius: 5px;
   background: #ff4757; color: #fff; cursor: pointer; font-size: 15px;
 }
-#join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; text-align: center; }
+#join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; text-align: center; max-width: 280px; }
+
+/* ── CHAT ── */
 #chat {
   display: none; flex-direction: column; width: 100%;
-  max-width: 540px; flex: 1; min-height: 0; position: relative;
+  max-width: 560px; flex: 1; min-height: 0; position: relative;
 }
+
+/* top bar */
 .top-bar {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 12px; flex-shrink: 0; border-bottom: 1px solid #2a2a2a; gap: 8px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; flex-shrink: 0; border-bottom: 1px solid #2a2a2a;
 }
 #room-title { font-weight: bold; font-size: 0.95em; color: #ccc; flex: 1; }
 #conn-pill {
@@ -45,34 +51,30 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 }
 #conn-pill.ok  { color: #7dffaa; }
 #conn-pill.err { color: #ff7d7d; }
-#users-btn {
+#lock-pill {
+  display: none; font-size: 0.7em; padding: 2px 8px;
+  border-radius: 10px; background: #3a1a1a; color: #ff7d7d;
+}
+.top-btn {
   background: #333; border: none; color: #fff; padding: 4px 10px;
-  border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
+  border-radius: 5px; cursor: pointer; font-size: 13px; white-space: nowrap;
 }
-#users-btn:hover { background: #444; }
-#admin-btn {
-  display: none;
-  background: #3a1f00; border: none; color: #ffd97d; padding: 4px 10px;
-  border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
-}
+.top-btn:hover { background: #444; }
+#admin-btn { display: none; background: #3a1f00; color: #ffd97d; }
 #admin-btn:hover { background: #4a2a00; }
 
-/* Admin panel */
-#admin-panel {
-  display: none; position: absolute; top: 42px; right: 12px;
-  background: #1e1200; border: 1px solid #7c4a00; border-radius: 10px;
-  padding: 14px 16px; width: 300px; z-index: 200;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.6); overflow-y: auto; max-height: 70vh;
+/* info bars */
+.info-bar {
+  display: none; padding: 5px 12px; font-size: 0.78em; flex-shrink: 0;
+  border-left: 3px solid; align-items: center; gap: 6px;
 }
-#admin-panel.open { display: block; }
-#admin-panel h3 { font-size: 0.8em; color: #ffd97d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-.cmd-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid #2a1a00; }
-.cmd-row:last-child { border-bottom: none; padding-bottom: 0; }
-.cmd-name { font-size: 0.88em; font-weight: bold; color: #ffb347; font-family: monospace; }
-.cmd-desc { font-size: 0.78em; color: #aa8855; line-height: 1.4; }
-.cmd-example { font-size: 0.75em; color: #665533; font-family: monospace; margin-top: 2px; }
+.info-bar.show { display: flex; }
+#topic-bar  { background: #1a2a1a; border-color: #4ade80; color: #86efac; }
+#slow-bar   { background: #1a1a2e; border-color: #60a5fa; color: #93c5fd; }
+#pin-bar    { background: #1e1e2e; border-color: #a78bfa; color: #c4b5fd; }
+#pin-text   { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Users panel */
+/* users panel */
 #users-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
@@ -83,213 +85,167 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #users-panel h3 { font-size: 0.8em; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 #users-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 #users-list li { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
-#users-list li .dot { width: 8px; height: 8px; border-radius: 50%; background: #7dffaa; flex-shrink: 0; }
-#users-list li .uname { color: #ddd; }
-#users-list li .you { font-size: 0.75em; color: #666; }
+.udot { width: 8px; height: 8px; border-radius: 50%; background: #7dffaa; flex-shrink: 0; }
+.uname { color: #ddd; }
+.uyou { font-size: 0.75em; color: #666; }
 
-#pin-bar {
-  display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
-  padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
-  flex-shrink: 0; gap: 8px; align-items: center;
+/* admin panel */
+#admin-panel {
+  display: none; position: absolute; top: 42px; right: 12px;
+  background: #1e1200; border: 1px solid #7c4a00; border-radius: 10px;
+  padding: 14px 16px; width: 310px; z-index: 200;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6); overflow-y: auto; max-height: 70vh;
 }
-#pin-bar.show { display: flex; }
-#pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#admin-panel.open { display: block; }
+#admin-panel h3 { font-size: 0.8em; color: #ffd97d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.cr { display: flex; flex-direction: column; gap: 2px; padding: 7px 0; border-bottom: 1px solid #2a1a00; }
+.cr:last-child { border-bottom: none; padding-bottom: 0; }
+.cn { font-size: 0.85em; font-weight: bold; color: #ffb347; font-family: monospace; }
+.cd { font-size: 0.76em; color: #aa8855; line-height: 1.4; }
+.ce { font-size: 0.73em; color: #665533; font-family: monospace; margin-top: 1px; }
 
+/* messages */
 #messages {
   flex: 1; overflow-y: auto; padding: 10px 12px;
-  display: flex; flex-direction: column; gap: 6px; min-height: 0;
+  display: flex; flex-direction: column; gap: 5px; min-height: 0;
 }
-.announce-wrap {
-  align-self: stretch; background: #1e1535;
-  border: 1px solid #7c3aed55; border-radius: 10px; padding: 12px 16px; text-align: center;
-}
-.announce-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
-.announce-text  { font-size: 1.05em; font-weight: bold; color: #e9d5ff; }
-.announce-by    { font-size: 0.72em; color: #7c3aed; margin-top: 4px; }
 
+/* reply bar */
 #reply-bar {
   display: none; background: #2a2a2a; border-left: 3px solid #ff4757;
-  padding: 5px 10px; font-size: 0.8em; color: #aaa;
-  flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 10px; font-size: 0.8em; color: #aaa; flex-shrink: 0;
+  align-items: center; justify-content: space-between; gap: 8px;
 }
 #reply-bar.show { display: flex; }
-#reply-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-#reply-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; padding: 0 4px; }
+#reply-preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+#reply-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; }
 
-.msg-wrap { display: flex; flex-direction: column; gap: 2px; max-width: 72%; }
-.msg-wrap.self-wrap  { align-self: flex-end;   align-items: flex-end; }
-.msg-wrap.other-wrap { align-self: flex-start; align-items: flex-start; }
-.reply-preview {
-  font-size: 0.75em; color: #888; background: #252525;
+/* message wraps */
+.mwrap { display: flex; flex-direction: column; gap: 2px; max-width: 73%; }
+.mwrap.me    { align-self: flex-end;   align-items: flex-end; }
+.mwrap.them  { align-self: flex-start; align-items: flex-start; }
+
+.reply-snip {
+  font-size: 0.74em; color: #888; background: #252525;
   border-left: 2px solid #ff4757; padding: 2px 8px; border-radius: 4px;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.msg {
+.bubble {
   padding: 8px 12px; border-radius: 10px;
-  word-break: break-word; font-size: 0.95em; line-height: 1.4;
+  word-break: break-word; font-size: 0.94em; line-height: 1.45;
 }
-.msg .name { font-weight: bold; font-size: 0.78em; margin-bottom: 2px; opacity: 0.8; }
-.name-colored { opacity: 1 !important; }
-.self    { background: #ff4757; border-bottom-right-radius: 3px; }
-.other   { background: #2f2f2f; border-bottom-left-radius: 3px; }
-.sys     { color: #555; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
-.admin   { color: #ffd97d; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
-.deleted { color: #555 !important; font-style: italic; background: #222 !important; }
-.msg-actions { display: none; gap: 4px; margin-top: 2px; }
-.msg-wrap:hover .msg-actions { display: flex; }
-.action-btn {
+.bubble .who { font-weight: bold; font-size: 0.77em; margin-bottom: 2px; opacity: 0.85; }
+.bubble.me   { background: #ff4757; border-bottom-right-radius: 3px; }
+.bubble.them { background: #2f2f2f; border-bottom-left-radius: 3px; }
+.bubble.del  { color: #555 !important; font-style: italic; background: #222 !important; }
+
+.sys    { align-self: center; color: #555; font-size: 0.77em; font-style: italic; }
+.admsys { align-self: center; color: #ffd97d; font-size: 0.77em; font-style: italic; }
+.warn-box {
+  align-self: stretch; background: #3a0000; border: 1px solid #ff4757;
+  border-radius: 8px; padding: 8px 12px; font-size: 0.84em; color: #ff9fab;
+}
+
+.announce {
+  align-self: stretch; background: #1e1535;
+  border: 1px solid #7c3aed55; border-radius: 10px;
+  padding: 12px 16px; text-align: center;
+}
+.ann-lbl { font-size: 0.69em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
+.ann-txt { font-size: 1.04em; font-weight: bold; color: #e9d5ff; }
+.ann-by  { font-size: 0.71em; color: #7c3aed; margin-top: 4px; }
+
+/* hover actions */
+.mwrap:hover .mactions { display: flex; }
+.mactions { display: none; gap: 4px; margin-top: 2px; }
+.abtn {
   background: #333; border: none; color: #aaa;
   font-size: 11px; padding: 2px 7px; border-radius: 4px; cursor: pointer;
 }
-.action-btn:hover { background: #444; color: #fff; }
-.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; min-height: 4px; }
-.reaction-pill {
+.abtn:hover { background: #444; color: #fff; }
+
+/* reactions */
+.mwrap:hover .rpicker { display: flex; }
+.rpicker { display: none; gap: 4px; margin-top: 2px; }
+.remoji { background: #333; border: none; font-size: 15px; padding: 2px 5px; border-radius: 6px; cursor: pointer; }
+.remoji:hover { background: #444; }
+.reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.rpill {
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px;
   padding: 1px 7px; font-size: 13px; cursor: pointer; user-select: none;
 }
-.reaction-pill:hover { background: #3a3a3a; }
-.reaction-pill.mine  { border-color: #ff4757; background: #3a1a1a; }
-.reaction-picker { display: none; gap: 4px; margin-top: 2px; }
-.msg-wrap:hover .reaction-picker { display: flex; }
-.react-opt { background: #333; border: none; font-size: 15px; padding: 2px 5px; border-radius: 6px; cursor: pointer; }
-.react-opt:hover { background: #444; }
-#typing { height: 18px; font-size: 0.78em; color: #666; padding: 0 12px; flex-shrink: 0; font-style: italic; }
+.rpill:hover { background: #3a3a3a; }
+.rpill.mine { border-color: #ff4757; background: #3a1a1a; }
+
+/* typing + input */
+#typing { height: 18px; font-size: 0.77em; color: #666; padding: 0 12px; flex-shrink: 0; font-style: italic; }
 #input-row { display: flex; padding: 10px 12px; gap: 8px; flex-shrink: 0; border-top: 1px solid #2a2a2a; }
-#input-row input {
+#msg-input {
   flex: 1; padding: 10px 14px; border: none; border-radius: 20px;
   background: #333; color: #fff; font-size: 14px; outline: none;
 }
-#input-row input:disabled { opacity: 0.4; }
-#input-row button {
+#msg-input:disabled { opacity: 0.4; }
+#send-btn {
   padding: 10px 18px; border: none; border-radius: 20px;
   background: #ff4757; color: #fff; cursor: pointer; font-size: 14px;
 }
-#input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+#send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
 <h1>Ligma Chat 💬</h1>
 
+<!-- JOIN -->
 <div id="join">
-  <input id="u-input" placeholder="Username" maxlength="25">
+  <input id="u-input" placeholder="Username" maxlength="25" autocomplete="off">
   <input id="r-input" placeholder="Room code" maxlength="32" value="general">
   <button id="join-btn">Join Room</button>
   <div id="join-err"></div>
 </div>
 
+<!-- CHAT -->
 <div id="chat">
   <div class="top-bar">
     <div id="room-title"></div>
-    <div id="lock-pill" style="display:none;font-size:0.7em;padding:2px 8px;border-radius:10px;background:#3a1a1a;color:#ff7d7d;">🔒 Locked</div>
+    <div id="lock-pill">🔒 Locked</div>
     <div id="conn-pill">connecting…</div>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button id="admin-btn">👑 Admin</button>
-      <button id="users-btn">👥 Users <span id="user-count"></span></button>
-    </div>
+    <button class="top-btn" id="users-btn">👥 <span id="ucount"></span></button>
+    <button class="top-btn" id="admin-btn">👑 Admin</button>
   </div>
 
-  <!-- Admin panel - only shown to admin -->
+  <!-- info bars -->
+  <div class="info-bar" id="topic-bar">💬 <span id="topic-text"></span></div>
+  <div class="info-bar" id="slow-bar">⏱ <span id="slow-text"></span></div>
+  <div class="info-bar" id="pin-bar">📌 <span id="pin-text"></span></div>
+
+  <!-- users panel -->
+  <div id="users-panel"><h3>Online</h3><ul id="users-list"></ul></div>
+
+  <!-- admin panel -->
   <div id="admin-panel">
     <h3>👑 Admin Commands</h3>
-    <div class="cmd-row">
-      <div class="cmd-name">/kick &lt;username&gt;</div>
-      <div class="cmd-desc">Immediately removes a user from the room.</div>
-      <div class="cmd-example">e.g. /kick John</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/mute &lt;username&gt;</div>
-      <div class="cmd-desc">Stops a user from sending messages.</div>
-      <div class="cmd-example">e.g. /mute John</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/unmute &lt;username&gt;</div>
-      <div class="cmd-desc">Lets a muted user talk again.</div>
-      <div class="cmd-example">e.g. /unmute John</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/rename &lt;username&gt; &lt;newname&gt;</div>
-      <div class="cmd-desc">Changes another user's display name.</div>
-      <div class="cmd-example">e.g. /rename John Dave</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/announce &lt;text&gt;</div>
-      <div class="cmd-desc">Sends a big highlighted announcement to everyone.</div>
-      <div class="cmd-example">e.g. /announce Welcome everyone!</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/pin &lt;text&gt;</div>
-      <div class="cmd-desc">Pins a message to the top of the chat. You can also hover any message and click 📌.</div>
-      <div class="cmd-example">e.g. /pin Rules: be nice!</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/unpin</div>
-      <div class="cmd-desc">Removes the currently pinned message.</div>
-      <div class="cmd-example">e.g. /unpin</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/slowmode &lt;seconds&gt;</div>
-      <div class="cmd-desc">Sets a cooldown for everyone. Use 0 to disable.</div>
-      <div class="cmd-example">e.g. /slowmode 5</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/userslow &lt;username&gt; &lt;seconds&gt;</div>
-      <div class="cmd-desc">Sets a slowmode for one specific user only. Use 0 to remove.</div>
-      <div class="cmd-example">e.g. /userslow John 10</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/purge &lt;username&gt; &lt;count&gt;</div>
-      <div class="cmd-desc">Deletes the last N messages from a user.</div>
-      <div class="cmd-example">e.g. /purge John 5</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/warn &lt;username&gt; &lt;message&gt;</div>
-      <div class="cmd-desc">Sends a private red warning message only that user can see.</div>
-      <div class="cmd-example">e.g. /warn John Stop spamming</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/lock</div>
-      <div class="cmd-desc">Stops everyone except admin from sending messages.</div>
-      <div class="cmd-example">e.g. /lock</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/unlock</div>
-      <div class="cmd-desc">Re-opens the chat after a lock.</div>
-      <div class="cmd-example">e.g. /unlock</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/color &lt;username&gt; &lt;color&gt;</div>
-      <div class="cmd-desc">Changes a user's name color. Use any CSS color or "reset".</div>
-      <div class="cmd-example">e.g. /color John #ff4757 &nbsp;or&nbsp; /color John reset</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/topic &lt;text&gt;</div>
-      <div class="cmd-desc">Sets a topic shown in a bar below the title for everyone.</div>
-      <div class="cmd-example">e.g. /topic Welcome to the room!</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/clear confirm</div>
-      <div class="cmd-desc">Wipes every message in the room. Requires typing "confirm" to prevent accidents.</div>
-      <div class="cmd-example">e.g. /clear confirm</div>
-    </div>
+    <div class="cr"><div class="cn">/kick &lt;user&gt;</div><div class="cd">Remove a user from the room.</div><div class="ce">e.g. /kick John</div></div>
+    <div class="cr"><div class="cn">/mute &lt;user&gt;</div><div class="cd">Stop a user from sending messages.</div><div class="ce">e.g. /mute John</div></div>
+    <div class="cr"><div class="cn">/unmute &lt;user&gt;</div><div class="cd">Let a muted user talk again.</div><div class="ce">e.g. /unmute John</div></div>
+    <div class="cr"><div class="cn">/warn &lt;user&gt; &lt;message&gt;</div><div class="cd">Send a private warning only that user sees.</div><div class="ce">e.g. /warn John Stop spamming</div></div>
+    <div class="cr"><div class="cn">/rename &lt;user&gt; &lt;newname&gt;</div><div class="cd">Change a user's display name.</div><div class="ce">e.g. /rename John Dave</div></div>
+    <div class="cr"><div class="cn">/color &lt;user&gt; &lt;color&gt;</div><div class="cd">Change a user's name color. Use "reset" to remove.</div><div class="ce">e.g. /color John #ff4757</div></div>
+    <div class="cr"><div class="cn">/announce &lt;text&gt;</div><div class="cd">Send a highlighted announcement to everyone.</div><div class="ce">e.g. /announce Welcome!</div></div>
+    <div class="cr"><div class="cn">/pin &lt;text&gt;</div><div class="cd">Pin a message at the top. Also hover any message → 📌.</div><div class="ce">e.g. /pin Rules: be nice</div></div>
+    <div class="cr"><div class="cn">/unpin</div><div class="cd">Remove the pinned message.</div><div class="ce">e.g. /unpin</div></div>
+    <div class="cr"><div class="cn">/topic &lt;text&gt;</div><div class="cd">Set a room topic shown to everyone.</div><div class="ce">e.g. /topic Friday night chat</div></div>
+    <div class="cr"><div class="cn">/lock</div><div class="cd">Stop everyone except admin from sending.</div></div>
+    <div class="cr"><div class="cn">/unlock</div><div class="cd">Re-open the chat after a lock.</div></div>
+    <div class="cr"><div class="cn">/slowmode &lt;seconds&gt;</div><div class="cd">Set a cooldown for everyone. 0 = off.</div><div class="ce">e.g. /slowmode 5</div></div>
+    <div class="cr"><div class="cn">/userslow &lt;user&gt; &lt;seconds&gt;</div><div class="cd">Slowmode for one user only. 0 = off.</div><div class="ce">e.g. /userslow John 10</div></div>
+    <div class="cr"><div class="cn">/purge &lt;user&gt; &lt;count&gt;</div><div class="cd">Delete the last N messages from a user.</div><div class="ce">e.g. /purge John 5</div></div>
+    <div class="cr"><div class="cn">/clear confirm</div><div class="cd">Wipe every message in the room.</div></div>
   </div>
 
-  <div id="topic-bar" style="display:none;background:#1a2a1a;border-left:3px solid #4ade80;padding:5px 12px;font-size:0.78em;color:#86efac;flex-shrink:0;">
-    💬 <span id="topic-label"></span>
-  </div>
-  <div id="slowmode-bar" style="display:none;background:#1a1a2e;border-left:3px solid #60a5fa;padding:5px 12px;font-size:0.78em;color:#93c5fd;flex-shrink:0;">
-    ⏱ <span id="slowmode-label"></span>
-  </div>
-  <div id="pin-bar">
-    <span>📌</span>
-    <span class="pin-text" id="pin-text"></span>
-  </div>
-  <div id="users-panel">
-    <h3>Online now</h3>
-    <ul id="users-list"></ul>
-  </div>
   <div id="messages"></div>
+
   <div id="reply-bar">
-    <span id="reply-preview-text"></span>
+    <span id="reply-preview"></span>
     <button id="reply-cancel">✕</button>
   </div>
   <div id="typing"></div>
@@ -300,708 +256,640 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 </div>
 
 <script>
-const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
+const FB_URL     = 'https://ligma--chat-default-rtdb.firebaseio.com'
 const ADMIN_NAME = 'Admin:Liam'
-// Use short keys instead of emojis in Firebase paths to avoid URL encoding issues
-const REACTIONS  = [
-  { emoji:'👍', key:'like' },
-  { emoji:'❤️', key:'heart' },
-  { emoji:'😂', key:'lol' },
-  { emoji:'😮', key:'wow' },
-  { emoji:'😢', key:'sad' },
-]
-const BAD_WORDS = ['fuck','shit','ass','bitch','cunt','dick','pussy','bastard','damn','crap']
+const REACTIONS  = [{e:'👍',k:'like'},{e:'❤️',k:'heart'},{e:'😂',k:'lol'},{e:'😮',k:'wow'},{e:'😢',k:'sad'}]
+const BAD_WORDS  = ['fuck','shit','bitch','cunt','pussy','bastard']
 
-function filterProfanity(text) {
-  let out = text
-  BAD_WORDS.forEach(w => { out = out.replace(new RegExp(`\\b${w}\\b`,'gi'), '*'.repeat(w.length)) })
-  return out
+function censor(t) {
+  let o = t
+  BAD_WORDS.forEach(w => { o = o.replace(new RegExp(`\\b${w}\\b`,'gi'), '*'.repeat(w.length)) })
+  return o
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-let username, room, muted=false, replyingTo=null
-let msgListener, cmdListener, typingListener, pinListener, reactListener, typingTimer, presenceTimer
-let slowmodeSeconds = 5       // global slowmode cooldown (default 5s)
-let userSlowmode = {}          // { username: seconds }
-let lastSentTime = 0           // when this user last sent a message
-let slowmodeListener = null
-let lockListener = null
-let topicListener = null
-let chatLocked = false
-let userColors = {}  // { username: cssColor }
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let username, room
+let muted        = false
+let chatLocked   = false
+let slowSecs     = 5        // global slowmode (default 5s)
+let mySlowSecs   = 0        // per-user slowmode
+let lastSent     = 0
+let replyTo      = null     // {id, u, t}
+let userColors   = {}       // username -> css color
+let seenIds      = new Set()// message ids already rendered
+let msgCache     = {}       // id -> message object
+let skipIds      = new Set()// ids to skip (existed before we joined)
+let listeners    = []       // EventSource instances to close on leave
+let presenceInt  = null
+let typingTimer  = null
 
+// ═══════════════════════════════════════════
+//  DOM
+// ═══════════════════════════════════════════
 const $ = id => document.getElementById(id)
-const joinDiv=$('join'), chatDiv=$('chat'), uInput=$('u-input'), rInput=$('r-input')
-const joinBtn=$('join-btn'), joinErr=$('join-err'), roomTitle=$('room-title')
-const connPill=$('conn-pill'), usersBtn=$('users-btn'), usersPanel=$('users-panel')
-const usersList=$('users-list'), userCount=$('user-count'), pinBar=$('pin-bar')
-const pinText=$('pin-text'), messagesDiv=$('messages'), replyBar=$('reply-bar')
-const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
-const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
-const adminBtn=$('admin-btn'), adminPanel=$('admin-panel')
+const joinDiv  = $('join'),    chatDiv    = $('chat')
+const uInput   = $('u-input'), rInput     = $('r-input')
+const joinBtn  = $('join-btn'),joinErr    = $('join-err')
+const roomTitle= $('room-title'), connPill= $('conn-pill'), lockPill= $('lock-pill')
+const usersBtn = $('users-btn'), usersPanel= $('users-panel'), usersList= $('users-list'), ucount= $('ucount')
+const adminBtn = $('admin-btn'), adminPanel= $('admin-panel')
+const topicBar = $('topic-bar'), topicText = $('topic-text')
+const slowBar  = $('slow-bar'),  slowText  = $('slow-text')
+const pinBar   = $('pin-bar'),   pinText   = $('pin-text')
+const msgsDiv  = $('messages')
+const replyBar = $('reply-bar'), replyPrev = $('reply-preview'), replyCancelBtn= $('reply-cancel')
+const typingDiv= $('typing')
+const msgInput = $('msg-input'), sendBtn   = $('send-btn')
 
-// Panel toggles — close each other
-usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
-adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
-document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
-;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
-// ── Firebase REST ──
-const fb      = p    => `${FB}/${p}.json`
-const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
-const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
-const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
-const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
-const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
+// ═══════════════════════════════════════════
+//  FIREBASE HELPERS
+// ═══════════════════════════════════════════
+const fbUrl   = p => `${FB_URL}/${p}.json`
+const fbGet   = p => fetch(fbUrl(p)).then(r=>r.json())
+const fbSet   = (p,d) => fetch(fbUrl(p),{method:'PUT',   body:JSON.stringify(d)})
+const fbPost  = (p,d) => fetch(fbUrl(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
+const fbPatch = (p,d) => fetch(fbUrl(p),{method:'PATCH', body:JSON.stringify(d)})
+const fbDel   = p => fetch(fbUrl(p),{method:'DELETE'})
 
-// ── SSE listener ──
-// BUG FIX: handle both 'put' (full snapshot) and 'patch' (partial update) correctly
-function fbListen(path, onPut, onPatch, primary=false) {
-  const es = new EventSource(fb(path))
-  es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
-  es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('patch err',err) } })
-  if (primary) {
-    es.onopen  = () => { connPill.textContent='connected'; connPill.className='ok'; const locked=chatLocked&&username!==ADMIN_NAME; msgInput.disabled=locked; sendBtn.disabled=locked }
-    es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
+// SSE — returns EventSource; cb gets {path, data}
+function fbListen(path, cb, isPrimary=false) {
+  const es = new EventSource(fbUrl(path))
+  const handle = raw => {
+    try {
+      const evt = JSON.parse(raw)
+      cb(evt.path, evt.data)
+    } catch(e) { console.warn('SSE parse error', e) }
   }
+  es.addEventListener('put',   e => handle(e.data))
+  es.addEventListener('patch', e => handle(e.data))
+  if (isPrimary) {
+    es.onopen  = () => setConn(true)
+    es.onerror = () => setConn(false)
+  }
+  listeners.push(es)
   return es
 }
 
-// ── Message cache: msgId -> full message object ──
-const msgCache = {}
-const seen = new Set()
-let initialSnapshotDone = false  // true after first Firebase snapshot is processed
-
-// BUG FIX: properly handle initial snapshot (path='/') vs incremental updates
-function handleMsgPut({ path, data }) {
-  if (!data) return
-  if (path === '/' || path === '') {
-    // This is the initial full snapshot — populate cache but DON'T render (no history)
-    // Mark all existing ids as seen so they won't render when they appear again
-    Object.entries(data).forEach(([id, m]) => {
-      if (!m) return
-      msgCache[id] = m
-      seen.add(id)  // mark as seen so future updates work, but don't render
-    })
-    initialSnapshotDone = true
-  } else {
-    // A new single message was added (path = '/KEY')
-    const parts = path.replace(/^\//, '').split('/')
-    if (parts.length > 1) return  // subfield update, skip
-    const id = parts[0]
-    if (!id || !data || typeof data !== 'object') return
-    msgCache[id] = data
-    if (seen.has(id)) {
-      updateMsg(id, data)  // already rendered, just update
-    } else {
-      seen.add(id)
-      if (data.announce) renderAnnounce(id, data)
-      else renderMsg(id, data)
-    }
-  }
+// ═══════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════
+function setConn(ok) {
+  connPill.textContent = ok ? 'connected' : 'reconnecting…'
+  connPill.className   = ok ? 'ok' : 'err'
+  // Only enable input if also not locked
+  const disable = !ok || (chatLocked && username !== ADMIN_NAME)
+  msgInput.disabled = disable
+  sendBtn.disabled  = disable
 }
 
-// patch events come in as { path: '/KEY/field', data: value }
-// For any patch that touches a message we know about, re-fetch that message fully
-function handleMsgPatch({ path, data }) {
-  if (data === null || data === undefined) return
-  if (path === '/' || path === '') {
-    // Multiple top-level message changes
-    Object.entries(data).forEach(([id, changes]) => {
-      if (!changes) return
-      // Re-fetch to get full updated state
-      fbGet(`rooms/${room}/messages/${id}`).then(m => {
-        if (!m) return
-        msgCache[id] = m
-        if (seen.has(id)) updateMsg(id, m)
-      })
-    })
-  } else {
-    // Any depth: /KEY, /KEY/reactions, /KEY/reactions/user/heart etc
-    const id = path.replace(/^\//, '').split('/')[0]
-    if (!id) return
-    // Re-fetch the whole message so we always have fresh reaction data
-    fbGet(`rooms/${room}/messages/${id}`).then(m => {
-      if (!m) return
-      msgCache[id] = m
-      if (seen.has(id)) updateMsg(id, m)
-    })
-  }
+function addSys(text, isAdmin=false) {
+  const d = document.createElement('div')
+  d.className = isAdmin ? 'admsys' : 'sys'
+  d.textContent = text
+  msgsDiv.appendChild(d)
+  msgsDiv.scrollTop = msgsDiv.scrollHeight
+}
+
+function addWarn(by, text) {
+  const d = document.createElement('div')
+  d.className = 'warn-box'
+  d.innerHTML = `<b>⚠️ Warning from ${esc(by)}:</b> ${esc(text)}`
+  msgsDiv.appendChild(d)
+  msgsDiv.scrollTop = msgsDiv.scrollHeight
 }
 
 function renderMsg(id, m) {
-  if (!m || !m.u || !m.t) return
-  if (seen.has(id)) { updateMsg(id, m); return }
-  seen.add(id)
+  // Skip if already on screen
+  if (seenIds.has(id)) { refreshMsg(id, m); return }
+  // Skip messages that existed before we joined (skipIds populated from initial snapshot)
+  if (skipIds.has(id)) return
+  seenIds.add(id)
+  msgCache[id] = m
+
+  if (m.announce) {
+    const wrap = document.createElement('div')
+    wrap.className = 'announce'
+    const lbl = document.createElement('div'); lbl.className='ann-lbl'; lbl.textContent='📢 Announcement'
+    const txt = document.createElement('div'); txt.className='ann-txt'; txt.textContent=censor(m.t)
+    const by  = document.createElement('div'); by.className='ann-by';   by.textContent='— '+m.u
+    wrap.append(lbl, txt, by)
+    msgsDiv.appendChild(wrap)
+    msgsDiv.scrollTop = msgsDiv.scrollHeight
+    return
+  }
 
   const isMe = m.u === username
   const wrap = document.createElement('div')
-  wrap.className = `msg-wrap ${isMe?'self-wrap':'other-wrap'}`
+  wrap.className = `mwrap ${isMe?'me':'them'}`
   wrap.dataset.id = id
 
+  // reply snip
   if (m.replyTo) {
-    const rp = document.createElement('div')
-    rp.className = 'reply-preview'
-    rp.textContent = `↩ ${m.replyTo.u}: ${m.replyTo.t}`
-    wrap.appendChild(rp)
+    const snip = document.createElement('div')
+    snip.className = 'reply-snip'
+    snip.textContent = `↩ ${m.replyTo.u}: ${m.replyTo.t}`
+    wrap.appendChild(snip)
   }
 
-  const bubble = document.createElement('div')
-  bubble.className = `msg ${isMe?'self':'other'}`
-  bubble.dataset.id = id
-  if (m.deleted) bubble.classList.add('deleted')
+  // bubble
+  const bub = document.createElement('div')
+  bub.className = `bubble ${isMe?'me':'them'}${m.deleted?' del':''}`
+  bub.dataset.id = id
 
-  const name = document.createElement('div')
-  name.className = 'name'
-  name.textContent = m.u
-  if (userColors[m.u]) { name.style.color = userColors[m.u]; name.classList.add('name-colored') }
-  bubble.appendChild(name)
+  const who = document.createElement('div')
+  who.className = 'who'
+  who.textContent = m.u
+  if (userColors[m.u]) who.style.color = userColors[m.u]
+  bub.appendChild(who)
 
   const body = document.createElement('div')
-  body.className = 'msg-body'
-  body.textContent = m.deleted ? '🚫 Message deleted' : filterProfanity(m.t)
-  bubble.appendChild(body)
-  wrap.appendChild(bubble)
+  body.className = 'body'
+  body.textContent = m.deleted ? '🚫 Message deleted' : censor(m.t)
+  bub.appendChild(body)
+  wrap.appendChild(bub)
 
-  // Reactions display
-  const rd = document.createElement('div')
-  rd.className = 'reactions'
-  rd.dataset.id = id
-  renderReactions(rd, m.reactions || {})
-  wrap.appendChild(rd)
+  // reactions row
+  const reacts = document.createElement('div')
+  reacts.className = 'reacts'
+  reacts.dataset.id = id
+  renderReacts(reacts, m.reactions||{})
+  wrap.appendChild(reacts)
 
-  // Reaction picker
+  // reaction picker (shows on hover)
   const picker = document.createElement('div')
-  picker.className = 'reaction-picker'
-  REACTIONS.forEach(({emoji, key}) => {
-    const b = document.createElement('button')
-    b.className = 'react-opt'
-    b.textContent = emoji
-    b.onclick = () => toggleReaction(id, key, emoji)
-    picker.appendChild(b)
+  picker.className = 'rpicker'
+  REACTIONS.forEach(({e,k}) => {
+    const btn = document.createElement('button')
+    btn.className = 'remoji'; btn.textContent = e
+    btn.onclick = () => doReact(id, k)
+    picker.appendChild(btn)
   })
   wrap.appendChild(picker)
 
-  // Action buttons
-  const actions = document.createElement('div')
-  actions.className = 'msg-actions'
+  // action buttons (show on hover)
+  const acts = document.createElement('div')
+  acts.className = 'mactions'
 
-  const replyBtn = document.createElement('button')
-  replyBtn.className = 'action-btn'
-  replyBtn.textContent = '↩ Reply'
-  replyBtn.onclick = () => setReply(id, m.u, m.t)
-  actions.appendChild(replyBtn)
+  const replyBtn2 = document.createElement('button')
+  replyBtn2.className = 'abtn'; replyBtn2.textContent = '↩ Reply'
+  replyBtn2.onclick = () => startReply(id, m.u, m.t)
+  acts.appendChild(replyBtn2)
 
-  if ((isMe || username===ADMIN_NAME) && !m.deleted) {
+  if (!m.deleted && (isMe || username===ADMIN_NAME)) {
     const delBtn = document.createElement('button')
-    delBtn.className = 'action-btn'
-    delBtn.textContent = '🗑 Delete'
+    delBtn.className = 'abtn'; delBtn.textContent = '🗑 Delete'
     delBtn.onclick = () => fbPatch(`rooms/${room}/messages/${id}`, {deleted:true})
-    actions.appendChild(delBtn)
+    acts.appendChild(delBtn)
   }
-  if (username===ADMIN_NAME && !m.deleted) {
+  if (!m.deleted && username===ADMIN_NAME) {
     const pinBtn = document.createElement('button')
-    pinBtn.className = 'action-btn'
-    pinBtn.textContent = '📌 Pin'
+    pinBtn.className = 'abtn'; pinBtn.textContent = '📌 Pin'
     pinBtn.onclick = () => doPin(m.u, m.t)
-    actions.appendChild(pinBtn)
+    acts.appendChild(pinBtn)
   }
-  wrap.appendChild(actions)
-  messagesDiv.appendChild(wrap)
-  messagesDiv.scrollTop = messagesDiv.scrollHeight
+  wrap.appendChild(acts)
+  msgsDiv.appendChild(wrap)
+  msgsDiv.scrollTop = msgsDiv.scrollHeight
 }
 
-function renderAnnounce(id, m) {
-  if (!m || seen.has(id)) return
-  seen.add(id)
-  const wrap = document.createElement('div')
-  wrap.className = 'announce-wrap'
-  const lbl = document.createElement('div'); lbl.className='announce-label'; lbl.textContent='📢 Announcement'
-  const txt = document.createElement('div'); txt.className='announce-text';  txt.textContent=filterProfanity(m.t)
-  const by  = document.createElement('div'); by.className='announce-by';     by.textContent='— '+m.u
-  wrap.appendChild(lbl); wrap.appendChild(txt); wrap.appendChild(by)
-  messagesDiv.appendChild(wrap)
-  messagesDiv.scrollTop = messagesDiv.scrollHeight
-}
-
-function updateMsg(id, m) {
-  if (!m) return
-  // Update deleted state
-  const bubble = messagesDiv.querySelector(`.msg[data-id="${id}"]`)
-  if (bubble && m.deleted) {
-    const body = bubble.querySelector('.msg-body')
-    if (body) body.textContent = '🚫 Message deleted'
-    bubble.classList.add('deleted')
+function refreshMsg(id, m) {
+  msgCache[id] = m
+  const bub = msgsDiv.querySelector(`.bubble[data-id="${id}"]`)
+  if (bub) {
+    const body = bub.querySelector('.body')
+    if (m.deleted) { body.textContent='🚫 Message deleted'; bub.classList.add('del') }
+    else body.textContent = censor(m.t)
   }
-  // Update reactions
-  const rd = messagesDiv.querySelector(`.reactions[data-id="${id}"]`)
-  if (rd) renderReactions(rd, m.reactions || {})
+  const reacts = msgsDiv.querySelector(`.reacts[data-id="${id}"]`)
+  if (reacts) renderReacts(reacts, m.reactions||{})
 }
 
-// BUG FIX: reactions now use safe string keys (like, heart, lol) not emoji as path keys
-function renderReactions(div, reactions) {
+function renderReacts(div, reactions) {
   div.innerHTML = ''
-  const counts = {}, mine = new Set()
-  Object.entries(reactions).forEach(([uid, keys]) => {
-    if (!keys || typeof keys !== 'object') return
-    Object.keys(keys).forEach(key => {
-      counts[key] = (counts[key]||0) + 1
-      if (uid === username) mine.add(key)
+  const counts={}, mine=new Set()
+  Object.entries(reactions).forEach(([uid,keys]) => {
+    if (!keys||typeof keys!=='object') return
+    Object.keys(keys).forEach(k => {
+      counts[k] = (counts[k]||0)+1
+      if (uid===username) mine.add(k)
     })
   })
-  REACTIONS.forEach(({emoji, key}) => {
-    if (!counts[key]) return
+  REACTIONS.forEach(({e,k}) => {
+    if (!counts[k]) return
     const pill = document.createElement('span')
-    pill.className = 'reaction-pill' + (mine.has(key) ? ' mine' : '')
-    pill.textContent = `${emoji} ${counts[key]}`
-    pill.onclick = () => toggleReaction(div.dataset.id, key, emoji)
+    pill.className = 'rpill'+(mine.has(k)?' mine':'')
+    pill.textContent = `${e} ${counts[k]}`
+    pill.onclick = () => doReact(div.dataset.id, k)
     div.appendChild(pill)
   })
 }
 
-function addSys(text, cls='sys') {
-  const d = document.createElement('div')
-  d.className = `msg ${cls}`
-  d.textContent = text
-  messagesDiv.appendChild(d)
-  messagesDiv.scrollTop = messagesDiv.scrollHeight
-}
-
-function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
-function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
-replyCancel.onclick = clearReply
-
-// BUG FIX: use safe ASCII key in path, not raw emoji
-async function toggleReaction(msgId, key, emoji) {
-  // Write reactions to BOTH the message node and a dedicated /reactions node
-  // The dedicated node is what the reactListener watches — it reliably fires for all users
-  const msgPath  = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
-  const dedPath  = `rooms/${room}/reactions/${msgId}/${username}/${key}`
-  const cached   = msgCache[msgId]
-  const currentlySet = cached?.reactions?.[username]?.[key]
-  if (currentlySet) {
-    await fbDel(msgPath)
-    await fbDel(dedPath)
-  } else {
-    await fbSet(msgPath, true)
-    await fbSet(dedPath, true)
-  }
-  // Update our own UI immediately without waiting for SSE
+async function doReact(msgId, key) {
+  const path = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
+  const rpath= `rooms/${room}/reactions/${msgId}/${username}/${key}`
+  const cur  = msgCache[msgId]?.reactions?.[username]?.[key]
+  if (cur) { await fbDel(path); await fbDel(rpath) }
+  else     { await fbSet(path,true); await fbSet(rpath,true) }
+  // refresh own UI immediately
   const updated = await fbGet(`rooms/${room}/messages/${msgId}`)
-  if (updated) {
-    msgCache[msgId] = updated
-    updateMsg(msgId, updated)
-  }
+  if (updated) refreshMsg(msgId, updated)
 }
 
-async function doPin(u, t) { await fbSet(`rooms/${room}/pin`, {u, t, ts:Date.now()}) }
-
-function showPin(data) {
-  if (!data||!data.t) { pinBar.classList.remove('show'); return }
-  pinText.textContent = `${data.u}: ${data.t}`
-  pinBar.classList.add('show')
+function startReply(id, u, t) {
+  replyTo = {id, u, t}
+  replyPrev.textContent = `↩ ${u}: ${t}`
+  replyBar.classList.add('show')
+  msgInput.focus()
 }
+function clearReply() { replyTo=null; replyBar.classList.remove('show') }
 
+function doPin(u, t) { fbSet(`rooms/${room}/pin`,{u,t}) }
+
+// ═══════════════════════════════════════════
+//  PRESENCE & TYPING
+// ═══════════════════════════════════════════
 async function refreshPresence() {
   const data = await fbGet(`rooms/${room}/presence`)
   const now = Date.now()
-  const online = data ? Object.values(data).filter(u=>now-u.ts<15000) : []
-  userCount.textContent = online.length ? `(${online.length})` : ''
+  const online = data ? Object.values(data).filter(u=>u&&now-u.ts<20000) : []
+  ucount.textContent = online.length
   usersList.innerHTML = ''
-  if (!online.length) {
-    const li=document.createElement('li'); li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'; usersList.appendChild(li); return
-  }
   online.forEach(u => {
     const li = document.createElement('li')
-    li.innerHTML = `<span class="dot"></span><span class="uname">${u.name}</span>${u.name===username?'<span class="you">(you)</span>':''}`
+    li.innerHTML = `<span class="udot"></span><span class="uname">${esc(u.name)}</span>${u.name===username?'<span class="uyou">(you)</span>':''}`
     usersList.appendChild(li)
   })
+  if (!online.length) {
+    const li = document.createElement('li')
+    li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'
+    usersList.appendChild(li)
+  }
 }
 
-async function renderTyping() {
-  const data = await fbGet(`rooms/${room}/typing`)
-  if (!data) { typingDiv.textContent=''; return }
-  const now = Date.now()
-  const who = Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
-  typingDiv.textContent = who.length ? who.join(', ')+(who.length===1?' is typing…':' are typing…') : ''
+function updatePresence() {
+  fbSet(`rooms/${room}/presence/${username}`, {name:username, ts:Date.now()})
 }
 
-function listenForCommands() {
-  cmdListener?.close()
-  cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
-    if (!data || !data.cmd) return
-    const {cmd, by, value, ts, secs} = data
-    // Ignore commands more than 30s old (stale from before we joined)
-    if (ts && Date.now() - ts > 30000) { fbDel(`rooms/${room}/commands/${username}`); return }
-
-    if (cmd === 'kick') {
-      fbDel(`rooms/${room}/commands/${username}`)
-      alert(`You were kicked by ${by}`)
-      location.reload()
-    } else if (cmd === 'mute') {
-      muted = true
-      addSys(`You were muted by ${by}`, 'admin')
-      fbDel(`rooms/${room}/commands/${username}`)
-    } else if (cmd === 'unmute') {
-      muted = false
-      addSys(`You were unmuted by ${by}`, 'admin')
-      fbDel(`rooms/${room}/commands/${username}`)
-    } else if (cmd === 'warn') {
-      const warnDiv = document.createElement('div')
-      warnDiv.style.cssText = 'align-self:stretch;background:#3a0000;border:1px solid #ff4757;border-radius:8px;padding:8px 12px;font-size:0.85em;color:#ff9fab;margin:4px 0;'
-      const safeVal = (value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      const safeBy  = (by||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      warnDiv.innerHTML = `<b>⚠️ Warning from ${safeBy}:</b> ${safeVal}`
-      messagesDiv.appendChild(warnDiv)
-      messagesDiv.scrollTop = messagesDiv.scrollHeight
-      fbDel(`rooms/${room}/commands/${username}`)
-    } else if (cmd === 'color') {
-      const col = value || 'reset'
-      userColors[username] = col === 'reset' ? undefined : col
-      document.querySelectorAll('.msg .name').forEach(n => {
-        if (n.textContent === username) {
-          if (col === 'reset') { n.style.color = ''; n.classList.remove('name-colored') }
-          else { n.style.color = col; n.classList.add('name-colored') }
-        }
-      })
-      addSys(col !== 'reset' ? '🎨 Your name color was changed' : '🎨 Your name color was reset', 'admin')
-      fbDel(`rooms/${room}/commands/${username}`)
-    } else if (cmd === 'userslow') {
-      const s = secs || 0
-      userSlowmode[username] = s
-      addSys(s > 0 ? `⏱ You have a ${s}s cooldown between messages` : '⏱ Your slowmode has been removed', 'admin')
-      fbDel(`rooms/${room}/commands/${username}`)
-    } else if (cmd === 'rename') {
-      const old = username
-      username = value
-      if (userSlowmode[old] !== undefined) { userSlowmode[username] = userSlowmode[old]; delete userSlowmode[old] }
-      fbDel(`rooms/${room}/presence/${old}`)
-      fbSet(`rooms/${room}/presence/${username}`, {name: username, ts: Date.now()})
-      addSys(`Renamed to "${value}" by ${by}`, 'admin')
-      fbDel(`rooms/${room}/commands/${old}`)
-      listenForCommands()
-    }
-  })
+// ═══════════════════════════════════════════
+//  ADMIN COMMANDS — received by target user
+// ═══════════════════════════════════════════
+function handleCommand(cmd, by, value, secs) {
+  if (cmd==='kick') {
+    alert(`You were kicked by ${by}`)
+    fbDel(`rooms/${room}/commands/${username}`)
+    location.reload()
+  } else if (cmd==='mute') {
+    muted = true
+    addSys(`You were muted by ${by}`, true)
+    fbDel(`rooms/${room}/commands/${username}`)
+  } else if (cmd==='unmute') {
+    muted = false
+    addSys(`You were unmuted by ${by}`, true)
+    fbDel(`rooms/${room}/commands/${username}`)
+  } else if (cmd==='warn') {
+    addWarn(by, value)
+    fbDel(`rooms/${room}/commands/${username}`)
+  } else if (cmd==='rename') {
+    fbDel(`rooms/${room}/presence/${username}`)
+    username = value
+    fbSet(`rooms/${room}/presence/${username}`, {name:username, ts:Date.now()})
+    addSys(`You were renamed to "${value}" by ${by}`, true)
+    fbDel(`rooms/${room}/commands/${value}`)
+    // re-listen under new name
+    fbListen(`rooms/${room}/commands/${username}`, (path, data) => {
+      if (data && data.cmd && Date.now()-data.ts<30000) handleCommand(data.cmd, data.by, data.value, data.secs)
+    })
+  } else if (cmd==='color') {
+    const col = value==='reset' ? null : value
+    userColors[username] = col
+    document.querySelectorAll('.bubble .who').forEach(n => {
+      if (n.textContent===username) n.style.color = col||''
+    })
+    addSys(col ? '🎨 Your name color was changed' : '🎨 Your name color was reset', true)
+    fbDel(`rooms/${room}/commands/${username}`)
+  } else if (cmd==='userslow') {
+    mySlowSecs = secs||0
+    addSys(mySlowSecs>0 ? `⏱ You have a ${mySlowSecs}s cooldown` : '⏱ Your slowmode was removed', true)
+    fbDel(`rooms/${room}/commands/${username}`)
+  }
 }
 
-async function runAdminCommand(cmd, args) {
-  if (cmd==='announce') { await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true}); addSys('📢 Sent','admin'); return }
-  if (cmd==='pin')      { await doPin(username,args); addSys('📌 Pinned','admin'); return }
-  if (cmd==='unpin')    { await fbDel(`rooms/${room}/pin`); showPin(null); addSys('📌 Pin removed','admin'); return }
+// ═══════════════════════════════════════════
+//  ADMIN COMMANDS — issued by admin
+// ═══════════════════════════════════════════
+async function runCmd(cmd, args) {
+  const words  = args.trim().split(/\s+/)
+  const target = words[0]||''
+  const rest   = words.slice(1).join(' ')
 
-  // /topic <text> — set room topic shown under title
+  if (cmd==='announce') {
+    if (!args) { addSys('Usage: /announce <text>', true); return }
+    await fbPost(`rooms/${room}/messages`, {u:username, t:args, ts:Date.now(), announce:true})
+    return
+  }
+  if (cmd==='pin') {
+    if (!args) { addSys('Usage: /pin <text>', true); return }
+    await doPin(username, args); addSys('📌 Pinned', true); return
+  }
+  if (cmd==='unpin') {
+    await fbDel(`rooms/${room}/pin`); addSys('📌 Unpinned', true); return
+  }
   if (cmd==='topic') {
-    await fbSet(`rooms/${room}/topic`, {text:args, by:username, ts:Date.now()})
-    addSys(`💬 Topic set: ${args}`,'admin'); return
+    if (!args) { addSys('Usage: /topic <text>', true); return }
+    await fbSet(`rooms/${room}/topic`, {text:args}); return
   }
-
-  // /lock — prevent non-admins from sending
   if (cmd==='lock') {
-    await fbSet(`rooms/${room}/lock`, {locked:true, by:username, ts:Date.now()})
-    addSys('🔒 Chat locked','admin'); return
+    await fbSet(`rooms/${room}/lock`, {on:true, by:username}); return
   }
-
-  // /unlock — re-open chat
   if (cmd==='unlock') {
-    await fbSet(`rooms/${room}/lock`, {locked:false, by:username, ts:Date.now()})
-    addSys('🔓 Chat unlocked','admin'); return
+    await fbSet(`rooms/${room}/lock`, {on:false, by:username}); return
   }
-
-  // /slowmode <seconds> — global cooldown for everyone (0 to disable)
   if (cmd==='slowmode') {
-    const secs = parseInt(args)
-    if (isNaN(secs)||secs<0) { addSys('Usage: /slowmode <seconds> (0 to disable)','admin'); return }
-    await fbSet(`rooms/${room}/slowmode`, {secs, by:username, ts:Date.now()})
-    addSys(`⏱ Global slowmode set to ${secs}s`,'admin'); return
+    const s = parseInt(args)
+    if (isNaN(s)||s<0) { addSys('Usage: /slowmode <seconds>', true); return }
+    await fbSet(`rooms/${room}/slowmode`, {secs:s, by:username}); return
   }
-
-  // /clear — wipe all messages
   if (cmd==='clear') {
-    if (args !== 'confirm') { addSys('Type /clear confirm to wipe all messages','admin'); return }
+    if (args!=='confirm') { addSys('Type /clear confirm to wipe all messages', true); return }
     await fbDel(`rooms/${room}/messages`)
     await fbDel(`rooms/${room}/reactions`)
-    messagesDiv.innerHTML = ''
-    seen.clear(); Object.keys(msgCache).forEach(k=>delete msgCache[k])
-    addSys('🗑 Chat cleared by admin','admin'); return
+    msgsDiv.innerHTML=''; seenIds.clear(); skipIds.clear()
+    Object.keys(msgCache).forEach(k=>delete msgCache[k])
+    addSys('🗑 Chat cleared', true); return
   }
-
-  const [target,...rest] = args.split(' ')
-  const value = rest.join(' ')
-
-  // /purge <username> <count> — delete last N messages from a user
   if (cmd==='purge') {
-    const count = parseInt(value) || 10
-    if (!target) { addSys('Usage: /purge <username> <count>','admin'); return }
+    const count = parseInt(rest)||10
+    if (!target) { addSys('Usage: /purge <user> <count>', true); return }
     const all = await fbGet(`rooms/${room}/messages`)
-    if (!all) { addSys('No messages to purge','admin'); return }
+    if (!all) { addSys('No messages', true); return }
     const matches = Object.entries(all)
       .filter(([,m])=>m&&m.u===target&&!m.deleted)
       .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0))
       .slice(0, count)
     await Promise.all(matches.map(([id])=>fbPatch(`rooms/${room}/messages/${id}`,{deleted:true})))
-    // Update local UI immediately for the admin
-    matches.forEach(([id,m]) => {
-      const updated = {...m, deleted:true}
-      msgCache[id] = updated
-      updateMsg(id, updated)
-    })
-    addSys(`🗑 Purged last ${matches.length} messages from ${target}`,'admin'); return
+    matches.forEach(([id,m])=>refreshMsg(id,{...m,deleted:true}))
+    addSys(`🗑 Purged ${matches.length} messages from ${target}`, true); return
   }
-
-  // /warn <username> <message> — private warning
+  // Commands that target a user
+  if (!target) { addSys(`Usage: /${cmd} <user> ...`, true); return }
+  if (cmd==='kick')    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
+  if (cmd==='mute')    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
+  if (cmd==='unmute')  await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
   if (cmd==='warn') {
-    if (!target||!value) { addSys('Usage: /warn <username> <message>','admin'); return }
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'warn',by:username,value,ts:Date.now()})
-    addSys(`⚠️ Warning sent to ${target}`,'admin'); return
+    if (!rest) { addSys('Usage: /warn <user> <message>', true); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,value:rest,ts:Date.now()})
   }
-
-  // /color <username> <color> — change name color
-  if (cmd==='color') {
-    if (!target) { addSys('Usage: /color <username> <color>','admin'); return }
-    const color = value || 'reset'
-    // Store in Firebase so the target user and new joiners see it
-    if (color === 'reset') await fbDel(`rooms/${room}/colors/${target}`)
-    else await fbSet(`rooms/${room}/colors/${target}`, color)
-    // Send command to target so their client updates live
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'color',by:username,value:color,ts:Date.now()})
-    // Update admin's own view of that user's messages immediately
-    userColors[target] = color === 'reset' ? undefined : color
-    document.querySelectorAll('.msg .name').forEach(n => {
-      if (n.textContent === target) {
-        if (color === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
-        else { n.style.color=color; n.classList.add('name-colored') }
-      }
-    })
-    addSys(`🎨 ${target}'s color set to ${color}`,'admin'); return
-  }
-
-  // /userslow <username> <seconds> — slowmode for one person (0 to disable)
-  if (cmd==='userslow') {
-    const secs = parseInt(value)
-    if (!target||isNaN(secs)||secs<0) { addSys('Usage: /userslow <username> <seconds> (0 to disable)','admin'); return }
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'userslow',by:username,secs,ts:Date.now()})
-    addSys(`⏱ Slowmode for ${target} set to ${secs}s`,'admin'); return
-  }
-
   if (cmd==='rename') {
-    if (!target||!value) { addSys('Usage: /rename <user> <newname>','admin'); return }
-    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value,ts:Date.now()})
-    addSys(`⚡ Renamed ${target} → ${value}`,'admin'); return
+    if (!rest) { addSys('Usage: /rename <user> <newname>', true); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,value:rest,ts:Date.now()})
   }
-  if (!target) { addSys(`Usage: /${cmd} <username>`,'admin'); return }
-  await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
-  addSys(`⚡ /${cmd} → ${target}`,'admin')
+  if (cmd==='color') {
+    const color = rest||'reset'
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,value:color,ts:Date.now()})
+    if (color==='reset') await fbDel(`rooms/${room}/colors/${target}`)
+    else await fbSet(`rooms/${room}/colors/${target}`, color)
+    userColors[target] = color==='reset' ? null : color
+    document.querySelectorAll('.bubble .who').forEach(n=>{
+      if (n.textContent===target) n.style.color = userColors[target]||''
+    })
+  }
+  if (cmd==='userslow') {
+    const s = parseInt(rest)
+    if (isNaN(s)||s<0) { addSys('Usage: /userslow <user> <seconds>', true); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,secs:s,ts:Date.now()})
+  }
+  addSys(`⚡ /${cmd} → ${target}`, true)
 }
 
-async function isUsernameTaken(name) {
-  const p = await fbGet(`rooms/${room}/presence`)
-  if (!p) return false
-  const now = Date.now()
-  return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
-}
+const CMDS = ['kick','mute','unmute','warn','rename','color','announce','pin','unpin','topic','lock','unlock','slowmode','userslow','purge','clear']
 
-// ── JOIN ──
+// ═══════════════════════════════════════════
+//  JOIN
+// ═══════════════════════════════════════════
 joinBtn.onclick = async () => {
-  const raw = uInput.value.trim() || 'Anon'
-  room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
+  const raw = uInput.value.trim().replace(/\s/g,'')
+  room = rInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'-') || 'general'
+
+  if (!raw) { joinErr.textContent='Enter a username.'; return }
+  if (raw.length>25) { joinErr.textContent='Username max 25 characters.'; return }
+
   joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
-  // Username validation
-  if (raw !== ADMIN_NAME) {
-    if (/\s/.test(raw)) {
-      joinErr.textContent='Username cannot contain spaces.'
-      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
-    }
-    if (raw.length > 25) {
-      joinErr.textContent='Username must be 25 characters or less.'
-      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
-    }
-  }
-
+  // Check Firebase reachable
   try {
-    const r = await fetch(fb(`rooms/${room}/ping`))
+    const r = await fetch(fbUrl(`rooms/${room}/.info`))
     if (!r.ok) throw new Error('HTTP '+r.status)
   } catch(e) {
     joinErr.textContent='Cannot reach Firebase: '+e.message
     joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
 
-  if (raw!==ADMIN_NAME && await isUsernameTaken(raw)) {
-    joinErr.textContent=`"${raw}" is already taken. Pick another name.`
-    joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+  // Check username not taken
+  if (raw !== ADMIN_NAME) {
+    const pres = await fbGet(`rooms/${room}/presence`)
+    if (pres) {
+      const now = Date.now()
+      const taken = Object.values(pres).some(u=>u&&u.name===raw&&now-u.ts<20000)
+      if (taken) {
+        joinErr.textContent=`"${raw}" is already in use.`
+        joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+      }
+    }
   }
 
-  username=raw
+  username = raw
   joinDiv.style.display='none'; chatDiv.style.display='flex'
   roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
-
-  // Only show admin button for admin
   if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  // BUG FIX: use separate put/patch handlers for messages
-  msgListener = fbListen(
-    `rooms/${room}/messages`,
-    handleMsgPut,   // put handler
-    handleMsgPatch, // patch handler
-    true            // primary — controls conn pill
-  )
+  // ── Snapshot existing message IDs so we can skip them ──
+  // We do NOT want to show history — only messages sent after we join
+  const existing = await fbGet(`rooms/${room}/messages`)
+  if (existing) Object.keys(existing).forEach(id => skipIds.add(id))
 
-  // Dedicated reactions listener — watches the entire reactions subtree
-  // This is the most reliable way to sync reactions to all users in real time
-  reactListener = fbListen(`rooms/${room}/reactions`, ({ path, data }) => {
-    if (!data && !path) return
-    const msgId = (path || '').replace(/^\//, '').split('/')[0]
-    if (!msgId) return
-    // Only update UI if this message is actually rendered on screen
-    if (!seen.has(msgId)) return
-    fbGet(`rooms/${room}/messages/${msgId}`).then(m => {
-      if (!m) return
-      msgCache[msgId] = m
-      updateMsg(msgId, m)
-    })
-  })
+  // ── Load room settings ──
+  const [pinData, topicData, lockData, slowData, colorsData] = await Promise.all([
+    fbGet(`rooms/${room}/pin`),
+    fbGet(`rooms/${room}/topic`),
+    fbGet(`rooms/${room}/lock`),
+    fbGet(`rooms/${room}/slowmode`),
+    fbGet(`rooms/${room}/colors`),
+  ])
+  if (pinData?.t)    { pinText.textContent=`${pinData.u}: ${pinData.t}`; pinBar.classList.add('show') }
+  if (topicData?.text) { topicText.textContent=topicData.text; topicBar.classList.add('show') }
+  if (lockData?.on)  { chatLocked=true; lockPill.style.display='block' }
+  if (slowData?.secs!==undefined) slowSecs = slowData.secs
+  if (slowSecs>0)    { slowText.textContent=`Slowmode: ${slowSecs}s between messages`; slowBar.classList.add('show') }
+  if (colorsData)    Object.entries(colorsData).forEach(([u,col])=>{ userColors[u]=col })
 
-  pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data), ({data}) => showPin(data))
-  const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
-  typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
-  listenForCommands()
-
-  // Global slowmode listener
-  const handleSlowmode = ({data}) => {
-    const secs = data?.secs ?? 0
-    slowmodeSeconds = secs
-    const bar = document.getElementById('slowmode-bar')
-    const lbl = document.getElementById('slowmode-label')
-    if (secs > 0) { lbl.textContent = `Slowmode: ${secs}s cooldown between messages`; bar.style.display='block' }
-    else { bar.style.display='none' }
-    if (data && data.by !== username) addSys(`⏱ Slowmode ${secs>0?'set to '+secs+'s':'disabled'} by admin`)
-  }
-  slowmodeListener = fbListen(`rooms/${room}/slowmode`, handleSlowmode, handleSlowmode)
-  // Load current slowmode
-  fbGet(`rooms/${room}/slowmode`).then(d => {
-    if (d && d.secs > 0) {
-      slowmodeSeconds = d.secs
-      document.getElementById('slowmode-label').textContent = `Slowmode: ${d.secs}s cooldown between messages`
-      document.getElementById('slowmode-bar').style.display = 'block'
-    }
-  })
-
-  // Clear any stale command left over from a previous kick/mute so rejoining works cleanly
+  // ── Clear any stale command for this username ──
   await fbDel(`rooms/${room}/commands/${username}`)
 
-  const up = () => fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
-  await up(); await refreshPresence()
-  presenceTimer = setInterval(()=>{ up(); refreshPresence() }, 8000)
+  // ── Start presence ──
+  updatePresence()
+  await refreshPresence()
+  presenceInt = setInterval(()=>{ updatePresence(); refreshPresence() }, 10000)
 
-  // Lock listener
-  const handleLock = ({data}) => {
-    const locked = data?.locked ?? false
-    chatLocked = locked
-    const pill = document.getElementById('lock-pill')
-    pill.style.display = locked ? 'block' : 'none'
-    const shouldDisable = locked && username !== ADMIN_NAME
-    msgInput.disabled = shouldDisable
-    sendBtn.disabled  = shouldDisable
-    if (data && data.by !== username) addSys(locked ? '🔒 Chat has been locked by admin' : '🔓 Chat has been unlocked','admin')
+  // ── Listen: messages ──
+  fbListen(`rooms/${room}/messages`, (path, data) => {
+    if (!data) return
+    if (path==='/'||path==='') {
+      // Full snapshot — this fires on first connect with all existing messages
+      // We already have skipIds populated so renderMsg will skip old ones
+      Object.entries(data).forEach(([id,m]) => { if (m) renderMsg(id,m) })
+    } else {
+      // Single message update (new message or edit)
+      const id = path.replace(/^\//,'').split('/')[0]
+      if (id && data && typeof data==='object') renderMsg(id, data)
+    }
+  }, true /* primary — controls conn pill */)
+
+  // ── Listen: reactions (dedicated node for reliable cross-user sync) ──
+  fbListen(`rooms/${room}/reactions`, (path, data) => {
+    if (!path||path==='/') return
+    const msgId = path.replace(/^\//,'').split('/')[0]
+    if (!seenIds.has(msgId)) return
+    fbGet(`rooms/${room}/messages/${msgId}`).then(m=>{ if(m) refreshMsg(msgId,m) })
+  })
+
+  // ── Listen: commands for this user ──
+  fbListen(`rooms/${room}/commands/${username}`, (path, data) => {
+    if (!data||!data.cmd) return
+    if (data.ts && Date.now()-data.ts>30000) { fbDel(`rooms/${room}/commands/${username}`); return }
+    handleCommand(data.cmd, data.by, data.value, data.secs)
+  })
+
+  // ── Listen: pin ──
+  fbListen(`rooms/${room}/pin`, (path, data) => {
+    if (data?.t) { pinText.textContent=`${data.u}: ${data.t}`; pinBar.classList.add('show') }
+    else pinBar.classList.remove('show')
+  })
+
+  // ── Listen: topic ──
+  fbListen(`rooms/${room}/topic`, (path, data) => {
+    if (data?.text) { topicText.textContent=data.text; topicBar.classList.add('show') }
+    else topicBar.classList.remove('show')
+  })
+
+  // ── Listen: lock ──
+  fbListen(`rooms/${room}/lock`, (path, data) => {
+    const on = data?.on ?? false
+    chatLocked = on
+    lockPill.style.display = on ? 'block' : 'none'
+    const disable = on && username!==ADMIN_NAME
+    msgInput.disabled=disable; sendBtn.disabled=disable
+    if (data?.by && data.by!==username) addSys(on?'🔒 Chat locked by admin':'🔓 Chat unlocked', true)
+  })
+
+  // ── Listen: slowmode ──
+  fbListen(`rooms/${room}/slowmode`, (path, data) => {
+    slowSecs = data?.secs ?? 0
+    if (slowSecs>0) { slowText.textContent=`Slowmode: ${slowSecs}s between messages`; slowBar.classList.add('show') }
+    else slowBar.classList.remove('show')
+    if (data?.by && data.by!==username) addSys(`⏱ Slowmode ${slowSecs>0?'set to '+slowSecs+'s':'disabled'}`, true)
+  })
+
+  // ── Listen: typing ──
+  fbListen(`rooms/${room}/typing`, (path, data) => {
+    if (!data) { typingDiv.textContent=''; return }
+    const now = Date.now()
+    const who = Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
+    typingDiv.textContent = who.length ? who.join(', ')+(who.length===1?' is typing…':' are typing…') : ''
+  })
+
+  // ── Set default slowmode if none exists ──
+  if (slowData===null || slowData===undefined) {
+    fbSet(`rooms/${room}/slowmode`, {secs:5, by:'system'})
+    slowSecs=5; slowText.textContent='Slowmode: 5s between messages'; slowBar.classList.add('show')
   }
-  lockListener = fbListen(`rooms/${room}/lock`, handleLock, handleLock)
-  fbGet(`rooms/${room}/lock`).then(d => {
-    if (d?.locked) {
-      chatLocked = true
-      document.getElementById('lock-pill').style.display = 'block'
-      if (username !== ADMIN_NAME) { msgInput.disabled=true; sendBtn.disabled=true }
-    }
-  })
 
-  // Topic listener
-  const handleTopic = ({data}) => {
-    const bar = document.getElementById('topic-bar')
-    const lbl = document.getElementById('topic-label')
-    if (data?.text) { lbl.textContent=data.text; bar.style.display='block' }
-    else bar.style.display='none'
-  }
-  topicListener = fbListen(`rooms/${room}/topic`, handleTopic, handleTopic)
-  fbGet(`rooms/${room}/topic`).then(d => {
-    if (d?.text) {
-      document.getElementById('topic-label').textContent = d.text
-      document.getElementById('topic-bar').style.display = 'block'
-    }
-  })
-
-  // Load user colors
-  fbGet(`rooms/${room}/colors`).then(d => {
-    if (!d) return
-    Object.entries(d).forEach(([u, color]) => { userColors[u] = color })
-  })
-
-  // Set default slowmode of 5s if none is configured yet
-  fbGet(`rooms/${room}/slowmode`).then(d => {
-    if (!d || d.secs === undefined) {
-      fbSet(`rooms/${room}/slowmode`, {secs:5, by:'system', ts:Date.now()})
-    }
-  })
-
-  addSys('You joined #'+room)
+  addSys('You joined #'+room+(username===ADMIN_NAME?' 👑':''))
   msgInput.focus()
 }
 
-// ── TYPING ──
+// ═══════════════════════════════════════════
+//  TYPING INDICATOR
+// ═══════════════════════════════════════════
 msgInput.addEventListener('input', () => {
+  if (!room||!username) return
   fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
   typingTimer = setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
-// ── SEND ──
+// ═══════════════════════════════════════════
+//  SEND MESSAGE
+// ═══════════════════════════════════════════
 async function sendMessage() {
-  const text=msgInput.value.trim(); if(!text)return
+  const text = msgInput.value.trim()
+  if (!text) return
 
+  // Admin commands
   if (text.startsWith('/') && username===ADMIN_NAME) {
-    msgInput.value=''; clearTimeout(typingTimer)
-    fbDel(`rooms/${room}/typing/${username}`)
-    const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
-    if (!['kick','mute','unmute','rename','announce','pin','unpin','slowmode','clear','purge','userslow','warn','lock','unlock','color','topic'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
-    if (!args && !['clear','unpin','lock','unlock'].includes(cmd)) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
-    await runAdminCommand(cmd, args||''); return
+    msgInput.value=''
+    const parts = text.slice(1).split(/\s+/)
+    const cmd   = parts[0].toLowerCase()
+    const args  = parts.slice(1).join(' ')
+    if (!CMDS.includes(cmd)) { addSys('Unknown command. Click 👑 Admin for help.', true); return }
+    await runCmd(cmd, args); return
   }
 
   if (muted) { addSys('You are muted.'); return }
   if (chatLocked && username!==ADMIN_NAME) { addSys('🔒 Chat is locked.'); return }
 
-  // Check per-user slowmode
-  const mySlowSecs = userSlowmode[username] || 0
-  const activeSlow = Math.max(slowmodeSeconds, mySlowSecs)
-  if (activeSlow > 0) {
-    const elapsed = (Date.now() - lastSentTime) / 1000
-    const remaining = activeSlow - elapsed
-    if (remaining > 0) {
-      addSys(`⏱ Slowmode: wait ${Math.ceil(remaining)}s before sending again.`)
-      return
-    }
+  // Slowmode check
+  const activeSlow = Math.max(slowSecs, mySlowSecs)
+  if (activeSlow>0 && lastSent>0) {
+    const wait = activeSlow - (Date.now()-lastSent)/1000
+    if (wait>0) { addSys(`⏱ Wait ${Math.ceil(wait)}s`); return }
   }
 
-  msgInput.value=''; clearTimeout(typingTimer)
+  msgInput.value=''
+  clearTimeout(typingTimer)
   fbDel(`rooms/${room}/typing/${username}`)
-  lastSentTime = Date.now()
+  lastSent = Date.now()
 
   const payload = {u:username, t:text, ts:Date.now()}
-  if (replyingTo) { payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t} }
-  clearReply()
+  if (replyTo) { payload.replyTo={id:replyTo.id, u:replyTo.u, t:replyTo.t}; clearReply() }
   await fbPost(`rooms/${room}/messages`, payload)
 }
 
+// ═══════════════════════════════════════════
+//  BUTTON WIRING
+// ═══════════════════════════════════════════
 sendBtn.onclick = sendMessage
 msgInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
 
-window.addEventListener('beforeunload', () => {
-  if (!room || !username) return  // never joined, nothing to clean up
+usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
+adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
+document.addEventListener('click', ()=>{ usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
+;[usersPanel, adminPanel].forEach(p=>p.addEventListener('click',e=>e.stopPropagation()))
+
+replyCancelBtn.onclick = clearReply
+
+// Block spaces in username input
+uInput.addEventListener('keydown', e=>{ if(e.key===' ')e.preventDefault() })
+uInput.addEventListener('input',   ()=>{ uInput.value=uInput.value.replace(/\s/g,'') })
+
+// ═══════════════════════════════════════════
+//  CLEANUP ON LEAVE
+// ═══════════════════════════════════════════
+window.addEventListener('beforeunload', ()=>{
+  if (!room||!username) return
   fbDel(`rooms/${room}/presence/${username}`)
   fbDel(`rooms/${room}/typing/${username}`)
-  clearInterval(presenceTimer)
-  msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close(); reactListener?.close(); slowmodeListener?.close(); lockListener?.close(); topicListener?.close()
+  clearInterval(presenceInt)
+  listeners.forEach(es=>es.close())
 })
 
-uInput.setAttribute("maxlength","25")
-uInput.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault() })
-uInput.addEventListener("input", () => { uInput.value = uInput.value.replace(/\s/g, "") })
 uInput.focus()
 </script>
 </body>
