@@ -318,7 +318,7 @@ function filterProfanity(text) {
   return out
 }
 
-let username, room, muted=false, joinTime=0, replyingTo=null
+let username, room, muted=false, replyingTo=null
 let msgListener, cmdListener, typingListener, pinListener, reactListener, typingTimer, presenceTimer
 let slowmodeSeconds = 5       // global slowmode cooldown (default 5s)
 let userSlowmode = {}          // { username: seconds }
@@ -366,31 +366,36 @@ function fbListen(path, onPut, onPatch, primary=false) {
 }
 
 // ── Message cache: msgId -> full message object ──
-// We keep a local cache so patch updates can be merged properly
 const msgCache = {}
 const seen = new Set()
+let initialSnapshotDone = false  // true after first Firebase snapshot is processed
 
 // BUG FIX: properly handle initial snapshot (path='/') vs incremental updates
 function handleMsgPut({ path, data }) {
   if (!data) return
   if (path === '/' || path === '') {
+    // This is the initial full snapshot — populate cache but DON'T render (no history)
+    // Mark all existing ids as seen so they won't render when they appear again
     Object.entries(data).forEach(([id, m]) => {
       if (!m) return
       msgCache[id] = m
-      if (seen.has(id)) updateMsg(id, m)  // refresh reactions etc for already-rendered msgs
-      else if (m.announce) renderAnnounce(id, m)
-      else renderMsg(id, m)
+      seen.add(id)  // mark as seen so future updates work, but don't render
     })
+    initialSnapshotDone = true
   } else {
-    // path = '/KEY' for a new message — ignore deeper paths (subfield updates handled by patch)
+    // A new single message was added (path = '/KEY')
     const parts = path.replace(/^\//, '').split('/')
-    if (parts.length > 1) return  // subfield update, not a new message
+    if (parts.length > 1) return  // subfield update, skip
     const id = parts[0]
     if (!id || !data || typeof data !== 'object') return
     msgCache[id] = data
-    if (seen.has(id)) updateMsg(id, data)
-    else if (data.announce) renderAnnounce(id, data)
-    else renderMsg(id, data)
+    if (seen.has(id)) {
+      updateMsg(id, data)  // already rendered, just update
+    } else {
+      seen.add(id)
+      if (data.announce) renderAnnounce(id, data)
+      else renderMsg(id, data)
+    }
   }
 }
 
@@ -424,7 +429,6 @@ function handleMsgPatch({ path, data }) {
 
 function renderMsg(id, m) {
   if (!m || !m.u || !m.t) return
-  if (m.ts < joinTime) return
   if (seen.has(id)) { updateMsg(id, m); return }
   seen.add(id)
 
@@ -506,7 +510,7 @@ function renderMsg(id, m) {
 }
 
 function renderAnnounce(id, m) {
-  if (!m || m.ts < joinTime || seen.has(id)) return
+  if (!m || seen.has(id)) return
   seen.add(id)
   const wrap = document.createElement('div')
   wrap.className = 'announce-wrap'
@@ -625,8 +629,8 @@ function listenForCommands() {
   cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
     if (!data || !data.cmd) return
     const {cmd, by, value, ts, secs} = data
-    // Ignore stale commands issued before we joined
-    if (ts && ts < joinTime) { fbDel(`rooms/${room}/commands/${username}`); return }
+    // Ignore commands more than 30s old (stale from before we joined)
+    if (ts && Date.now() - ts > 30000) { fbDel(`rooms/${room}/commands/${username}`); return }
 
     if (cmd === 'kick') {
       fbDel(`rooms/${room}/commands/${username}`)
@@ -825,7 +829,7 @@ joinBtn.onclick = async () => {
     joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
 
-  username=raw; joinTime=Date.now()
+  username=raw
   joinDiv.style.display='none'; chatDiv.style.display='flex'
   roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
 
