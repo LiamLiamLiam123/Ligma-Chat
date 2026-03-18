@@ -284,8 +284,9 @@ let mySlowSecs   = 0        // per-user slowmode
 let lastSent     = 0
 let replyTo      = null     // {id, u, t}
 let userColors   = {}       // username -> css color
-let joinTime     = 0        // ms timestamp when we joined
-let seenIds      = new Set()// message ids already rendered
+let historyIds   = new Set()// ids from initial snapshot — skip these
+let firstSnapshot = true     // true until first SSE snapshot is processed
+let seenIds      = new Set()// ids we have rendered
 let msgCache     = {}       // id -> message object
 let listeners    = []       // EventSource instances to close on leave
 let presenceInt  = null
@@ -368,9 +369,7 @@ function addWarn(by, text) {
 
 function renderMsg(id, m) {
   if (seenIds.has(id)) { refreshMsg(id, m); return }
-  // Skip messages that were sent before we joined (history)
-  // Use a 3s grace window to account for clock differences
-  if (m && m.ts && m.ts < (joinTime - 3000)) return
+  if (historyIds.has(id)) return  // existed before we joined
   seenIds.add(id)
   msgCache[id] = m
 
@@ -621,8 +620,9 @@ async function runCmd(cmd, args) {
     if (args!=='confirm') { addSys('Type /clear confirm to wipe all messages', true); return }
     await fbDel(`rooms/${room}/messages`)
     await fbDel(`rooms/${room}/reactions`)
-    msgsDiv.innerHTML=''; seenIds.clear()
+    msgsDiv.innerHTML=''; seenIds.clear(); historyIds.clear()
     Object.keys(msgCache).forEach(k=>delete msgCache[k])
+    firstSnapshot = true
     addSys('🗑 Chat cleared', true); return
   }
   if (cmd==='purge') {
@@ -726,27 +726,44 @@ joinBtn.onclick = async () => {
   if (slowSecs>0)    { slowText.textContent=`Slowmode: ${slowSecs}s between messages`; slowBar.classList.add('show') }
   if (colorsData)    Object.entries(colorsData).forEach(([u,col])=>{ userColors[u]=col })
 
-  // Record when we joined — messages older than this are history and get skipped
-  joinTime = Date.now()
-
   // ── Clear any stale command for this username ──
   await fbDel(`rooms/${room}/commands/${username}`)
 
   // ── Start presence ──
   updatePresence()
-  await refreshPresence()
-  presenceInt = setInterval(()=>{ updatePresence(); refreshPresence() }, 10000)
+
+  // Live presence listener — updates the users panel instantly when anyone joins/leaves
+  fbListen(`rooms/${room}/presence`, (path, data) => {
+    // Any change to presence node means someone joined, left, or updated heartbeat
+    refreshPresence()
+  })
+
+  presenceInt = setInterval(()=>{ updatePresence() }, 10000)
 
   // ── Listen: messages ──
+  firstSnapshot = true  // reset on each join
   fbListen(`rooms/${room}/messages`, (path, data) => {
-    if (!data) return
     if (path==='/'||path==='') {
-      // Full snapshot — renderMsg will skip messages older than joinTime
-      Object.entries(data).forEach(([id,m]) => { if (m) renderMsg(id,m) })
+      if (firstSnapshot) {
+        // First event is always a full snapshot of ALL existing messages.
+        // Mark them all as history so they don't render.
+        firstSnapshot = false
+        if (data) Object.keys(data).forEach(id => historyIds.add(id))
+        return  // don't render any of these
+      }
+      // A subsequent full-replace (e.g. after /clear) — render everything
+      if (data) Object.entries(data).forEach(([id,m]) => { if (m) renderMsg(id,m) })
     } else {
-      // Single message update (new message or edit)
+      // Incremental update: a new message or an edit to an existing one
+      if (!data) return
       const id = path.replace(/^\//,'').split('/')[0]
-      if (id && data && typeof data==='object') renderMsg(id, data)
+      if (!id) return
+      if (typeof data === 'object' && data.u && data.t) {
+        renderMsg(id, data)  // new message
+      } else {
+        // Could be a sub-field update (e.g. deleted:true) — re-fetch the full message
+        fbGet(`rooms/${room}/messages/${id}`).then(m => { if (m) { msgCache[id]=m; if (seenIds.has(id)) refreshMsg(id,m) } })
+      }
     }
   }, true /* primary — controls conn pill */)
 
