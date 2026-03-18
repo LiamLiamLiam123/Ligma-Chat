@@ -129,6 +129,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   word-break: break-word; font-size: 0.95em; line-height: 1.4;
 }
 .msg .name { font-weight: bold; font-size: 0.78em; margin-bottom: 2px; opacity: 0.8; }
+.name-colored { opacity: 1 !important; }
 .self    { background: #ff4757; border-bottom-right-radius: 3px; }
 .other   { background: #2f2f2f; border-bottom-left-radius: 3px; }
 .sys     { color: #555; font-size: 0.78em; font-style: italic; background: transparent; padding: 1px 0; align-self: center; }
@@ -170,7 +171,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <h1>Ligma Chat 💬</h1>
 
 <div id="join">
-  <input id="u-input" placeholder="Username" maxlength="24">
+  <input id="u-input" placeholder="Username" maxlength="25">
   <input id="r-input" placeholder="Room code" maxlength="32" value="general">
   <button id="join-btn">Join Room</button>
   <div id="join-err"></div>
@@ -179,6 +180,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <div id="chat">
   <div class="top-bar">
     <div id="room-title"></div>
+    <div id="lock-pill" style="display:none;font-size:0.7em;padding:2px 8px;border-radius:10px;background:#3a1a1a;color:#ff7d7d;">🔒 Locked</div>
     <div id="conn-pill">connecting…</div>
     <div style="display:flex;gap:6px;align-items:center;">
       <button id="admin-btn">👑 Admin</button>
@@ -219,8 +221,64 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
       <div class="cmd-desc">Pins a message to the top of the chat. You can also hover any message and click 📌.</div>
       <div class="cmd-example">e.g. /pin Rules: be nice!</div>
     </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/unpin</div>
+      <div class="cmd-desc">Removes the currently pinned message.</div>
+      <div class="cmd-example">e.g. /unpin</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/slowmode &lt;seconds&gt;</div>
+      <div class="cmd-desc">Sets a cooldown for everyone. Use 0 to disable.</div>
+      <div class="cmd-example">e.g. /slowmode 5</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/userslow &lt;username&gt; &lt;seconds&gt;</div>
+      <div class="cmd-desc">Sets a slowmode for one specific user only. Use 0 to remove.</div>
+      <div class="cmd-example">e.g. /userslow John 10</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/purge &lt;username&gt; &lt;count&gt;</div>
+      <div class="cmd-desc">Deletes the last N messages from a user.</div>
+      <div class="cmd-example">e.g. /purge John 5</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/warn &lt;username&gt; &lt;message&gt;</div>
+      <div class="cmd-desc">Sends a private red warning message only that user can see.</div>
+      <div class="cmd-example">e.g. /warn John Stop spamming</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/lock</div>
+      <div class="cmd-desc">Stops everyone except admin from sending messages.</div>
+      <div class="cmd-example">e.g. /lock</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/unlock</div>
+      <div class="cmd-desc">Re-opens the chat after a lock.</div>
+      <div class="cmd-example">e.g. /unlock</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/color &lt;username&gt; &lt;color&gt;</div>
+      <div class="cmd-desc">Changes a user's name color. Use any CSS color or "reset".</div>
+      <div class="cmd-example">e.g. /color John #ff4757 &nbsp;or&nbsp; /color John reset</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/topic &lt;text&gt;</div>
+      <div class="cmd-desc">Sets a topic shown in a bar below the title for everyone.</div>
+      <div class="cmd-example">e.g. /topic Welcome to the room!</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-name">/clear confirm</div>
+      <div class="cmd-desc">Wipes every message in the room. Requires typing "confirm" to prevent accidents.</div>
+      <div class="cmd-example">e.g. /clear confirm</div>
+    </div>
   </div>
 
+  <div id="topic-bar" style="display:none;background:#1a2a1a;border-left:3px solid #4ade80;padding:5px 12px;font-size:0.78em;color:#86efac;flex-shrink:0;">
+    💬 <span id="topic-label"></span>
+  </div>
+  <div id="slowmode-bar" style="display:none;background:#1a1a2e;border-left:3px solid #60a5fa;padding:5px 12px;font-size:0.78em;color:#93c5fd;flex-shrink:0;">
+    ⏱ <span id="slowmode-label"></span>
+  </div>
   <div id="pin-bar">
     <span>📌</span>
     <span class="pin-text" id="pin-text"></span>
@@ -261,7 +319,15 @@ function filterProfanity(text) {
 }
 
 let username, room, muted=false, joinTime=0, replyingTo=null
-let msgListener, cmdListener, typingListener, pinListener, typingTimer, presenceTimer
+let msgListener, cmdListener, typingListener, pinListener, reactListener, typingTimer, presenceTimer
+let slowmodeSeconds = 5       // global slowmode cooldown (default 5s)
+let userSlowmode = {}          // { username: seconds }
+let lastSentTime = 0           // when this user last sent a message
+let slowmodeListener = null
+let lockListener = null
+let topicListener = null
+let chatLocked = false
+let userColors = {}  // { username: cssColor }
 
 const $ = id => document.getElementById(id)
 const joinDiv=$('join'), chatDiv=$('chat'), uInput=$('u-input'), rInput=$('r-input')
@@ -290,12 +356,14 @@ const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
 
 // ── SSE listener ──
 // BUG FIX: handle both 'put' (full snapshot) and 'patch' (partial update) correctly
-function fbListen(path, onPut, onPatch) {
+function fbListen(path, onPut, onPatch, primary=false) {
   const es = new EventSource(fb(path))
   es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
   es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('patch err',err) } })
-  es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
-  es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
+  if (primary) {
+    es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
+    es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
+  }
   return es
 }
 
@@ -308,19 +376,22 @@ const seen = new Set()
 function handleMsgPut({ path, data }) {
   if (!data) return
   if (path === '/' || path === '') {
-    // Full snapshot — iterate all messages
     Object.entries(data).forEach(([id, m]) => {
       if (!m) return
       msgCache[id] = m
-      if (m.announce) renderAnnounce(id, m)
+      if (seen.has(id)) updateMsg(id, m)  // refresh reactions etc for already-rendered msgs
+      else if (m.announce) renderAnnounce(id, m)
       else renderMsg(id, m)
     })
   } else {
-    // Single message added (path = '/KEY')
-    const id = path.replace(/^\//, '')
-    if (!data || typeof data !== 'object') return
+    // path = '/KEY' for a new message — ignore deeper paths (subfield updates handled by patch)
+    const parts = path.replace(/^\//, '').split('/')
+    if (parts.length > 1) return  // subfield update, not a new message
+    const id = parts[0]
+    if (!id || !data || typeof data !== 'object') return
     msgCache[id] = data
-    if (data.announce) renderAnnounce(id, data)
+    if (seen.has(id)) updateMsg(id, data)
+    else if (data.announce) renderAnnounce(id, data)
     else renderMsg(id, data)
   }
 }
@@ -379,6 +450,7 @@ function renderMsg(id, m) {
   const name = document.createElement('div')
   name.className = 'name'
   name.textContent = m.u
+  if (userColors[m.u]) { name.style.color = userColors[m.u]; name.classList.add('name-colored') }
   bubble.appendChild(name)
 
   const body = document.createElement('div')
@@ -440,7 +512,10 @@ function renderAnnounce(id, m) {
   seen.add(id)
   const wrap = document.createElement('div')
   wrap.className = 'announce-wrap'
-  wrap.innerHTML = `<div class="announce-label">📢 Announcement</div><div class="announce-text">${filterProfanity(m.t)}</div><div class="announce-by">— ${m.u}</div>`
+  const lbl = document.createElement('div'); lbl.className='announce-label'; lbl.textContent='📢 Announcement'
+  const txt = document.createElement('div'); txt.className='announce-text';  txt.textContent=filterProfanity(m.t)
+  const by  = document.createElement('div'); by.className='announce-by';     by.textContent='— '+m.u
+  wrap.appendChild(lbl); wrap.appendChild(txt); wrap.appendChild(by)
   messagesDiv.appendChild(wrap)
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
@@ -493,16 +568,20 @@ function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
 
 // BUG FIX: use safe ASCII key in path, not raw emoji
 async function toggleReaction(msgId, key, emoji) {
-  const path = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
-  // Check current cache first to avoid round-trip
-  const cached = msgCache[msgId]
+  // Write reactions to BOTH the message node and a dedicated /reactions node
+  // The dedicated node is what the reactListener watches — it reliably fires for all users
+  const msgPath  = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
+  const dedPath  = `rooms/${room}/reactions/${msgId}/${username}/${key}`
+  const cached   = msgCache[msgId]
   const currentlySet = cached?.reactions?.[username]?.[key]
   if (currentlySet) {
-    await fbDel(path)
+    await fbDel(msgPath)
+    await fbDel(dedPath)
   } else {
-    await fbSet(path, true)
+    await fbSet(msgPath, true)
+    await fbSet(dedPath, true)
   }
-  // Re-fetch and update to ensure UI is correct
+  // Update our own UI immediately without waiting for SSE
   const updated = await fbGet(`rooms/${room}/messages/${msgId}`)
   if (updated) {
     msgCache[msgId] = updated
@@ -546,12 +625,47 @@ function listenForCommands() {
   cmdListener?.close()
   cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
     if (!data||!data.cmd) return
-    const {cmd,by,value} = data
+    const {cmd,by,value,ts} = data
+    // Ignore stale commands issued before we joined (e.g. old kick)
+    if (ts && ts < joinTime) { fbDel(`rooms/${room}/commands/${username}`); return }
     if (cmd==='kick')   { alert(`Kicked by ${by}`); fbDel(`rooms/${room}/commands/${username}`); location.reload() }
     if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
     if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
+    if (cmd==='warn') {
+      // Show warning as a prominent red system message only visible to this user
+      const warnDiv = document.createElement('div')
+      warnDiv.style.cssText = 'align-self:stretch;background:#3a0000;border:1px solid #ff4757;border-radius:8px;padding:8px 12px;font-size:0.85em;color:#ff9fab;margin:2px 0;'
+      warnDiv.innerHTML = `<b>⚠️ Warning from ${by}:</b> ${value.replace(/</g,'&lt;')}`
+      messagesDiv.appendChild(warnDiv)
+      messagesDiv.scrollTop = messagesDiv.scrollHeight
+      fbDel(`rooms/${room}/commands/${username}`)
+      return
+    }
+    if (cmd==='color') {
+      userColors[username] = value === 'reset' ? undefined : value
+      document.querySelectorAll('.msg .name').forEach(n => {
+        if (n.textContent === username) {
+          if (value === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
+          else { n.style.color=value; n.classList.add('name-colored') }
+        }
+      })
+      if (value !== 'reset') addSys(`🎨 Your name color was changed`,'admin')
+      else addSys(`🎨 Your name color was reset`,'admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+      return
+    }
+    if (cmd==='userslow') {
+      const s = data.secs || 0
+      userSlowmode[username] = s
+      if (s > 0) addSys(`⏱ You have a ${s}s cooldown between messages`,'admin')
+      else addSys('⏱ Your slowmode has been removed','admin')
+      fbDel(`rooms/${room}/commands/${username}`)
+      return
+    }
     if (cmd==='rename') {
       const old=username; username=value
+      // Carry over any per-user slowmode to the new username key
+      if (userSlowmode[old] !== undefined) { userSlowmode[username]=userSlowmode[old]; delete userSlowmode[old] }
       fbDel(`rooms/${room}/presence/${old}`)
       fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
       addSys(`Renamed to "${value}" by ${by}`,'admin')
@@ -564,8 +678,105 @@ function listenForCommands() {
 async function runAdminCommand(cmd, args) {
   if (cmd==='announce') { await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true}); addSys('📢 Sent','admin'); return }
   if (cmd==='pin')      { await doPin(username,args); addSys('📌 Pinned','admin'); return }
+  if (cmd==='unpin')    { await fbDel(`rooms/${room}/pin`); showPin(null); addSys('📌 Pin removed','admin'); return }
+
+  // /topic <text> — set room topic shown under title
+  if (cmd==='topic') {
+    await fbSet(`rooms/${room}/topic`, {text:args, by:username, ts:Date.now()})
+    addSys(`💬 Topic set: ${args}`,'admin'); return
+  }
+
+  // /lock — prevent non-admins from sending
+  if (cmd==='lock') {
+    await fbSet(`rooms/${room}/lock`, {locked:true, by:username, ts:Date.now()})
+    addSys('🔒 Chat locked','admin'); return
+  }
+
+  // /unlock — re-open chat
+  if (cmd==='unlock') {
+    await fbSet(`rooms/${room}/lock`, {locked:false, by:username, ts:Date.now()})
+    addSys('🔓 Chat unlocked','admin'); return
+  }
+
+  // /slowmode <seconds> — global cooldown for everyone (0 to disable)
+  if (cmd==='slowmode') {
+    const secs = parseInt(args)
+    if (isNaN(secs)||secs<0) { addSys('Usage: /slowmode <seconds> (0 to disable)','admin'); return }
+    await fbSet(`rooms/${room}/slowmode`, {secs, by:username, ts:Date.now()})
+    addSys(`⏱ Global slowmode set to ${secs}s`,'admin'); return
+  }
+
+  // /clear — wipe all messages
+  if (cmd==='clear') {
+    if (args !== 'confirm') { addSys('Type /clear confirm to wipe all messages','admin'); return }
+    await fbDel(`rooms/${room}/messages`)
+    await fbDel(`rooms/${room}/reactions`)
+    messagesDiv.innerHTML = ''
+    seen.clear(); Object.keys(msgCache).forEach(k=>delete msgCache[k])
+    addSys('🗑 Chat cleared by admin','admin'); return
+  }
+
   const [target,...rest] = args.split(' ')
   const value = rest.join(' ')
+
+  // /purge <username> <count> — delete last N messages from a user
+  if (cmd==='purge') {
+    const count = parseInt(value) || 10
+    if (!target) { addSys('Usage: /purge <username> <count>','admin'); return }
+    const all = await fbGet(`rooms/${room}/messages`)
+    if (!all) { addSys('No messages to purge','admin'); return }
+    const matches = Object.entries(all)
+      .filter(([,m])=>m&&m.u===target&&!m.deleted)
+      .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0))
+      .slice(0, count)
+    await Promise.all(matches.map(([id])=>fbPatch(`rooms/${room}/messages/${id}`,{deleted:true})))
+    // Update local UI immediately for the admin
+    matches.forEach(([id,m]) => {
+      const updated = {...m, deleted:true}
+      msgCache[id] = updated
+      updateMsg(id, updated)
+    })
+    addSys(`🗑 Purged last ${matches.length} messages from ${target}`,'admin'); return
+  }
+
+  // /warn <username> <message> — private warning
+  if (cmd==='warn') {
+    if (!target||!value) { addSys('Usage: /warn <username> <message>','admin'); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'warn',by:username,value,ts:Date.now()})
+    addSys(`⚠️ Warning sent to ${target}`,'admin'); return
+  }
+
+  // /color <username> <color> — change name color
+  if (cmd==='color') {
+    const color = value || 'reset'
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'color',by:username,value:color,ts:Date.now()})
+    // Also store in room so new joiners see the color
+    if (color === 'reset') await fbDel(`rooms/${room}/colors/${target}`)
+    else await fbSet(`rooms/${room}/colors/${target}`, color)
+    userColors[target] = color === 'reset' ? undefined : color
+    // Update any already-rendered messages from this user
+    document.querySelectorAll('.msg .name').forEach(el => {
+      const wrap = el.closest('.msg-wrap')
+      if (!wrap) return
+      const msgs = wrap.querySelectorAll('.msg .name')
+      msgs.forEach(n => {
+        if (n.textContent === target) {
+          if (color === 'reset') { n.style.color=''; n.classList.remove('name-colored') }
+          else { n.style.color=color; n.classList.add('name-colored') }
+        }
+      })
+    })
+    addSys(`🎨 ${target}'s color set to ${color}`,'admin'); return
+  }
+
+  // /userslow <username> <seconds> — slowmode for one person (0 to disable)
+  if (cmd==='userslow') {
+    const secs = parseInt(value)
+    if (!target||isNaN(secs)||secs<0) { addSys('Usage: /userslow <username> <seconds> (0 to disable)','admin'); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'userslow',by:username,secs,ts:Date.now()})
+    addSys(`⏱ Slowmode for ${target} set to ${secs}s`,'admin'); return
+  }
+
   if (cmd==='rename') {
     if (!target||!value) { addSys('Usage: /rename <user> <newname>','admin'); return }
     await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value,ts:Date.now()})
@@ -625,17 +836,101 @@ joinBtn.onclick = async () => {
   msgListener = fbListen(
     `rooms/${room}/messages`,
     handleMsgPut,   // put handler
-    handleMsgPatch  // patch handler
+    handleMsgPatch, // patch handler
+    true            // primary — controls conn pill
   )
+
+  // Dedicated reactions listener — watches the entire reactions subtree
+  // This is the most reliable way to sync reactions to all users in real time
+  reactListener = fbListen(`rooms/${room}/reactions`, ({ path, data }) => {
+    if (data === null && path === '/') return
+    const msgId = (path || '').replace(/^\//, '').split('/')[0]
+    if (!msgId) return
+    // Only update UI if this message is actually rendered on screen
+    if (!seen.has(msgId)) return
+    fbGet(`rooms/${room}/messages/${msgId}`).then(m => {
+      if (!m) return
+      msgCache[msgId] = m
+      updateMsg(msgId, m)
+    })
+  })
 
   pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
   const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
   typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
   listenForCommands()
 
+  // Global slowmode listener
+  slowmodeListener = fbListen(`rooms/${room}/slowmode`, ({data}) => {
+    const secs = data?.secs ?? 0
+    slowmodeSeconds = secs
+    const bar = document.getElementById('slowmode-bar')
+    const lbl = document.getElementById('slowmode-label')
+    if (secs > 0) { lbl.textContent = `Slowmode: ${secs}s cooldown between messages`; bar.style.display='block' }
+    else { bar.style.display='none' }
+    if (data && data.by !== username) addSys(`⏱ Slowmode ${secs>0?'set to '+secs+'s':'disabled'} by admin`)
+  })
+  // Load current slowmode
+  fbGet(`rooms/${room}/slowmode`).then(d => {
+    if (d && d.secs > 0) {
+      slowmodeSeconds = d.secs
+      document.getElementById('slowmode-label').textContent = `Slowmode: ${d.secs}s cooldown between messages`
+      document.getElementById('slowmode-bar').style.display = 'block'
+    }
+  })
+
+  // Clear any stale command left over from a previous kick/mute so rejoining works cleanly
+  await fbDel(`rooms/${room}/commands/${username}`)
+
   const up = () => fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
   await up(); await refreshPresence()
-  presenceTimer = setInterval(()=>{ up(); refreshPresence(); renderTyping() }, 8000)
+  presenceTimer = setInterval(()=>{ up(); refreshPresence() }, 8000)
+
+  // Lock listener
+  lockListener = fbListen(`rooms/${room}/lock`, ({data}) => {
+    const locked = data?.locked ?? false
+    chatLocked = locked
+    const pill = document.getElementById('lock-pill')
+    pill.style.display = locked ? 'block' : 'none'
+    if (locked) { msgInput.disabled=true; sendBtn.disabled=true }
+    else if (username===ADMIN_NAME) { msgInput.disabled=false; sendBtn.disabled=false }
+    else { msgInput.disabled=false; sendBtn.disabled=false }
+    if (data && data.by !== username) addSys(locked ? '🔒 Chat has been locked by admin' : '🔓 Chat has been unlocked','admin')
+  })
+  fbGet(`rooms/${room}/lock`).then(d => {
+    if (d?.locked) {
+      chatLocked = true
+      document.getElementById('lock-pill').style.display = 'block'
+      if (username !== ADMIN_NAME) { msgInput.disabled=true; sendBtn.disabled=true }
+    }
+  })
+
+  // Topic listener
+  topicListener = fbListen(`rooms/${room}/topic`, ({data}) => {
+    const bar = document.getElementById('topic-bar')
+    const lbl = document.getElementById('topic-label')
+    if (data?.text) { lbl.textContent=data.text; bar.style.display='block' }
+    else bar.style.display='none'
+  })
+  fbGet(`rooms/${room}/topic`).then(d => {
+    if (d?.text) {
+      document.getElementById('topic-label').textContent = d.text
+      document.getElementById('topic-bar').style.display = 'block'
+    }
+  })
+
+  // Load user colors
+  fbGet(`rooms/${room}/colors`).then(d => {
+    if (!d) return
+    Object.entries(d).forEach(([u, color]) => { userColors[u] = color })
+  })
+
+  // Set default slowmode of 5s if none is configured yet
+  fbGet(`rooms/${room}/slowmode`).then(d => {
+    if (!d || d.secs === undefined) {
+      fbSet(`rooms/${room}/slowmode`, {secs:5, by:'system', ts:Date.now()})
+    }
+  })
 
   addSys('You joined #'+room)
   msgInput.focus()
@@ -651,17 +946,35 @@ msgInput.addEventListener('input', () => {
 // ── SEND ──
 async function sendMessage() {
   const text=msgInput.value.trim(); if(!text)return
-  msgInput.value=''; clearTimeout(typingTimer)
-  fbDel(`rooms/${room}/typing/${username}`)
 
   if (text.startsWith('/') && username===ADMIN_NAME) {
+    msgInput.value=''; clearTimeout(typingTimer)
+    fbDel(`rooms/${room}/typing/${username}`)
     const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
-    if (!['kick','mute','unmute','rename','announce','pin'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
-    if (!args) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
-    await runAdminCommand(cmd,args); return
+    if (!['kick','mute','unmute','rename','announce','pin','unpin','slowmode','clear','purge','userslow','warn','lock','unlock','color','topic'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
+    if (!args && !['clear','unpin','lock','unlock'].includes(cmd)) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
+    await runAdminCommand(cmd, args||''); return
   }
 
   if (muted) { addSys('You are muted.'); return }
+  if (chatLocked && username!==ADMIN_NAME) { addSys('🔒 Chat is locked.'); return }
+
+  // Check per-user slowmode
+  const mySlowSecs = userSlowmode[username] || 0
+  const activeSlow = Math.max(slowmodeSeconds, mySlowSecs)
+  if (activeSlow > 0) {
+    const elapsed = (Date.now() - lastSentTime) / 1000
+    const remaining = activeSlow - elapsed
+    if (remaining > 0) {
+      addSys(`⏱ Slowmode: wait ${Math.ceil(remaining)}s before sending again.`)
+      return
+    }
+  }
+
+  msgInput.value=''; clearTimeout(typingTimer)
+  fbDel(`rooms/${room}/typing/${username}`)
+  lastSentTime = Date.now()
+
   const payload = {u:username, t:text, ts:Date.now()}
   if (replyingTo) { payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t} }
   clearReply()
@@ -672,10 +985,11 @@ sendBtn.onclick = sendMessage
 msgInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
 
 window.addEventListener('beforeunload', () => {
+  if (!room || !username) return  // never joined, nothing to clean up
   fbDel(`rooms/${room}/presence/${username}`)
   fbDel(`rooms/${room}/typing/${username}`)
   clearInterval(presenceTimer)
-  msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close()
+  msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close(); reactListener?.close(); slowmodeListener?.close(); lockListener?.close(); topicListener?.close()
 })
 
 uInput.setAttribute("maxlength","25")
