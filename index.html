@@ -284,9 +284,9 @@ let mySlowSecs   = 0        // per-user slowmode
 let lastSent     = 0
 let replyTo      = null     // {id, u, t}
 let userColors   = {}       // username -> css color
+let joinTime     = 0        // ms timestamp when we joined
 let seenIds      = new Set()// message ids already rendered
 let msgCache     = {}       // id -> message object
-let skipIds      = new Set()// ids to skip (existed before we joined)
 let listeners    = []       // EventSource instances to close on leave
 let presenceInt  = null
 let typingTimer  = null
@@ -367,10 +367,10 @@ function addWarn(by, text) {
 }
 
 function renderMsg(id, m) {
-  // Skip if already on screen
   if (seenIds.has(id)) { refreshMsg(id, m); return }
-  // Skip messages that existed before we joined (skipIds populated from initial snapshot)
-  if (skipIds.has(id)) return
+  // Skip messages that were sent before we joined (history)
+  // Use a 3s grace window to account for clock differences
+  if (m && m.ts && m.ts < (joinTime - 3000)) return
   seenIds.add(id)
   msgCache[id] = m
 
@@ -621,7 +621,7 @@ async function runCmd(cmd, args) {
     if (args!=='confirm') { addSys('Type /clear confirm to wipe all messages', true); return }
     await fbDel(`rooms/${room}/messages`)
     await fbDel(`rooms/${room}/reactions`)
-    msgsDiv.innerHTML=''; seenIds.clear(); skipIds.clear()
+    msgsDiv.innerHTML=''; seenIds.clear()
     Object.keys(msgCache).forEach(k=>delete msgCache[k])
     addSys('🗑 Chat cleared', true); return
   }
@@ -711,11 +711,6 @@ joinBtn.onclick = async () => {
   roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
   if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  // ── Snapshot existing message IDs so we can skip them ──
-  // We do NOT want to show history — only messages sent after we join
-  const existing = await fbGet(`rooms/${room}/messages`)
-  if (existing) Object.keys(existing).forEach(id => skipIds.add(id))
-
   // ── Load room settings ──
   const [pinData, topicData, lockData, slowData, colorsData] = await Promise.all([
     fbGet(`rooms/${room}/pin`),
@@ -731,6 +726,9 @@ joinBtn.onclick = async () => {
   if (slowSecs>0)    { slowText.textContent=`Slowmode: ${slowSecs}s between messages`; slowBar.classList.add('show') }
   if (colorsData)    Object.entries(colorsData).forEach(([u,col])=>{ userColors[u]=col })
 
+  // Record when we joined — messages older than this are history and get skipped
+  joinTime = Date.now()
+
   // ── Clear any stale command for this username ──
   await fbDel(`rooms/${room}/commands/${username}`)
 
@@ -743,8 +741,7 @@ joinBtn.onclick = async () => {
   fbListen(`rooms/${room}/messages`, (path, data) => {
     if (!data) return
     if (path==='/'||path==='') {
-      // Full snapshot — this fires on first connect with all existing messages
-      // We already have skipIds populated so renderMsg will skip old ones
+      // Full snapshot — renderMsg will skip messages older than joinTime
       Object.entries(data).forEach(([id,m]) => { if (m) renderMsg(id,m) })
     } else {
       // Single message update (new message or edit)
