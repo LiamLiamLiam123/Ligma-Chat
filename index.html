@@ -57,7 +57,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 }
 #admin-btn:hover { background: #4a2a00; }
 
-/* Admin panel */
 #admin-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #1e1200; border: 1px solid #7c4a00; border-radius: 10px;
@@ -72,7 +71,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .cmd-desc { font-size: 0.78em; color: #aa8855; line-height: 1.4; }
 .cmd-example { font-size: 0.75em; color: #665533; font-family: monospace; margin-top: 2px; }
 
-/* Users panel */
 #users-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
@@ -186,7 +184,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
     </div>
   </div>
 
-  <!-- Admin panel - only shown to admin -->
   <div id="admin-panel">
     <h3>👑 Admin Commands</h3>
     <div class="cmd-row">
@@ -216,7 +213,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
     </div>
     <div class="cmd-row">
       <div class="cmd-name">/pin &lt;text&gt;</div>
-      <div class="cmd-desc">Pins a message to the top of the chat. You can also hover any message and click 📌.</div>
+      <div class="cmd-desc">Pins a message to the top of the chat.</div>
       <div class="cmd-example">e.g. /pin Rules: be nice!</div>
     </div>
   </div>
@@ -244,7 +241,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <script>
 const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
 const ADMIN_NAME = 'Admin:Liam'
-// Use short keys instead of emojis in Firebase paths to avoid URL encoding issues
 const REACTIONS  = [
   { emoji:'👍', key:'like' },
   { emoji:'❤️', key:'heart' },
@@ -273,14 +269,12 @@ const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
 const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
 const adminBtn=$('admin-btn'), adminPanel=$('admin-panel')
 
-// Panel toggles — close each other
 usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
 adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
 document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
 ;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
 replyCancel.onclick = clearReply
 
-// ── Firebase REST ──
 const fb      = p    => `${FB}/${p}.json`
 const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
 const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
@@ -288,8 +282,6 @@ const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
 const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
 const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
 
-// ── SSE listener ──
-// BUG FIX: handle both 'put' (full snapshot) and 'patch' (partial update) correctly
 function fbListen(path, onPut, onPatch) {
   const es = new EventSource(fb(path))
   es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
@@ -299,16 +291,12 @@ function fbListen(path, onPut, onPatch) {
   return es
 }
 
-// ── Message cache: msgId -> full message object ──
-// We keep a local cache so patch updates can be merged properly
 const msgCache = {}
 const seen = new Set()
 
-// BUG FIX: properly handle initial snapshot (path='/') vs incremental updates
 function handleMsgPut({ path, data }) {
   if (!data) return
   if (path === '/' || path === '') {
-    // Full snapshot — iterate all messages
     Object.entries(data).forEach(([id, m]) => {
       if (!m) return
       msgCache[id] = m
@@ -316,7 +304,6 @@ function handleMsgPut({ path, data }) {
       else renderMsg(id, m)
     })
   } else {
-    // Single message added (path = '/KEY')
     const id = path.replace(/^\//, '')
     if (!data || typeof data !== 'object') return
     msgCache[id] = data
@@ -325,15 +312,11 @@ function handleMsgPut({ path, data }) {
   }
 }
 
-// patch events come in as { path: '/KEY/field', data: value }
-// For any patch that touches a message we know about, re-fetch that message fully
 function handleMsgPatch({ path, data }) {
   if (data === null || data === undefined) return
   if (path === '/' || path === '') {
-    // Multiple top-level message changes
     Object.entries(data).forEach(([id, changes]) => {
       if (!changes) return
-      // Re-fetch to get full updated state
       fbGet(`rooms/${room}/messages/${id}`).then(m => {
         if (!m) return
         msgCache[id] = m
@@ -341,10 +324,8 @@ function handleMsgPatch({ path, data }) {
       })
     })
   } else {
-    // Any depth: /KEY, /KEY/reactions, /KEY/reactions/user/heart etc
     const id = path.replace(/^\//, '').split('/')[0]
     if (!id) return
-    // Re-fetch the whole message so we always have fresh reaction data
     fbGet(`rooms/${room}/messages/${id}`).then(m => {
       if (!m) return
       msgCache[id] = m
@@ -387,14 +368,12 @@ function renderMsg(id, m) {
   bubble.appendChild(body)
   wrap.appendChild(bubble)
 
-  // Reactions display
   const rd = document.createElement('div')
   rd.className = 'reactions'
   rd.dataset.id = id
   renderReactions(rd, m.reactions || {})
   wrap.appendChild(rd)
 
-  // Reaction picker
   const picker = document.createElement('div')
   picker.className = 'reaction-picker'
   REACTIONS.forEach(({emoji, key}) => {
@@ -406,7 +385,6 @@ function renderMsg(id, m) {
   })
   wrap.appendChild(picker)
 
-  // Action buttons
   const actions = document.createElement('div')
   actions.className = 'msg-actions'
 
@@ -447,19 +425,16 @@ function renderAnnounce(id, m) {
 
 function updateMsg(id, m) {
   if (!m) return
-  // Update deleted state
   const bubble = messagesDiv.querySelector(`.msg[data-id="${id}"]`)
   if (bubble && m.deleted) {
     const body = bubble.querySelector('.msg-body')
     if (body) body.textContent = '🚫 Message deleted'
     bubble.classList.add('deleted')
   }
-  // Update reactions
   const rd = messagesDiv.querySelector(`.reactions[data-id="${id}"]`)
   if (rd) renderReactions(rd, m.reactions || {})
 }
 
-// BUG FIX: reactions now use safe string keys (like, heart, lol) not emoji as path keys
 function renderReactions(div, reactions) {
   div.innerHTML = ''
   const counts = {}, mine = new Set()
@@ -491,10 +466,8 @@ function addSys(text, cls='sys') {
 function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
 function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
 
-// BUG FIX: use safe ASCII key in path, not raw emoji
 async function toggleReaction(msgId, key, emoji) {
   const path = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
-  // Check current cache first to avoid round-trip
   const cached = msgCache[msgId]
   const currentlySet = cached?.reactions?.[username]?.[key]
   if (currentlySet) {
@@ -502,7 +475,6 @@ async function toggleReaction(msgId, key, emoji) {
   } else {
     await fbSet(path, true)
   }
-  // Re-fetch and update to ensure UI is correct
   const updated = await fbGet(`rooms/${room}/messages/${msgId}`)
   if (updated) {
     msgCache[msgId] = updated
@@ -547,7 +519,15 @@ function listenForCommands() {
   cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
     if (!data||!data.cmd) return
     const {cmd,by,value} = data
-    if (cmd==='kick')   { alert(`Kicked by ${by}`); fbDel(`rooms/${room}/commands/${username}`); location.reload() }
+    if (cmd==='kick') {
+      alert(`You have been kicked by ${by}`)
+      // Delete presence first so the username is free immediately on rejoin
+      fbDel(`rooms/${room}/presence/${username}`).finally(() => {
+        fbDel(`rooms/${room}/commands/${username}`).finally(() => {
+          location.reload()
+        })
+      })
+    }
     if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
     if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
     if (cmd==='rename') {
@@ -583,13 +563,11 @@ async function isUsernameTaken(name) {
   return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
 }
 
-// ── JOIN ──
 joinBtn.onclick = async () => {
   const raw = uInput.value.trim() || 'Anon'
   room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
   joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
-  // Username validation
   if (raw !== ADMIN_NAME) {
     if (/\s/.test(raw)) {
       joinErr.textContent='Username cannot contain spaces.'
@@ -618,14 +596,12 @@ joinBtn.onclick = async () => {
   joinDiv.style.display='none'; chatDiv.style.display='flex'
   roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
 
-  // Only show admin button for admin
   if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  // BUG FIX: use separate put/patch handlers for messages
   msgListener = fbListen(
     `rooms/${room}/messages`,
-    handleMsgPut,   // put handler
-    handleMsgPatch  // patch handler
+    handleMsgPut,
+    handleMsgPatch
   )
 
   pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
@@ -641,14 +617,12 @@ joinBtn.onclick = async () => {
   msgInput.focus()
 }
 
-// ── TYPING ──
 msgInput.addEventListener('input', () => {
   fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
   typingTimer = setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
-// ── SEND ──
 async function sendMessage() {
   const text=msgInput.value.trim(); if(!text)return
   msgInput.value=''; clearTimeout(typingTimer)
