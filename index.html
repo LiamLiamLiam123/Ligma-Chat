@@ -515,10 +515,9 @@ function doPin(u, t) { fbSet(`rooms/${room}/pin`,{u,t}) }
 // ═══════════════════════════════════════════
 //  PRESENCE & TYPING
 // ═══════════════════════════════════════════
-async function refreshPresence() {
-  const data = await fbGet(`rooms/${room}/presence`)
+function renderPresenceData(data) {
   const now = Date.now()
-  const online = data ? Object.values(data).filter(u=>u&&now-u.ts<20000) : []
+  const online = data ? Object.values(data).filter(u=>u&&u.name&&now-u.ts<20000) : []
   ucount.textContent = online.length
   usersList.innerHTML = ''
   online.forEach(u => {
@@ -531,6 +530,11 @@ async function refreshPresence() {
     li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'
     usersList.appendChild(li)
   }
+}
+
+async function refreshPresence() {
+  const data = await fbGet(`rooms/${room}/presence`)
+  renderPresenceData(data)
 }
 
 function updatePresence() {
@@ -732,39 +736,43 @@ joinBtn.onclick = async () => {
   // ── Start presence ──
   updatePresence()
 
-  // Live presence listener — updates the users panel instantly when anyone joins/leaves
+  // Live presence listener — render directly from SSE data, no extra fetch
   fbListen(`rooms/${room}/presence`, (path, data) => {
-    // Any change to presence node means someone joined, left, or updated heartbeat
-    refreshPresence()
+    if (!data) { renderPresenceData({}); return }
+    // SSE can give us the full object (path='/') or a single user update
+    if (path === '/' || path === '') {
+      renderPresenceData(data)
+    } else {
+      // A single user changed — re-fetch to get full picture
+      refreshPresence()
+    }
   })
 
   presenceInt = setInterval(()=>{ updatePresence() }, 10000)
 
   // ── Listen: messages ──
-  firstSnapshot = true  // reset on each join
+  // Strategy: on first SSE event (always a full snapshot), mark all existing IDs
+  // as history. Every subsequent event (put or patch) re-delivers the full messages
+  // object — we iterate it and render any ID not in historyIds.
+  firstSnapshot = true
   fbListen(`rooms/${room}/messages`, (path, data) => {
-    if (path==='/'||path==='') {
-      if (firstSnapshot) {
-        // First event is always a full snapshot of ALL existing messages.
-        // Mark them all as history so they don't render.
-        firstSnapshot = false
-        if (data) Object.keys(data).forEach(id => historyIds.add(id))
-        return  // don't render any of these
-      }
-      // A subsequent full-replace (e.g. after /clear) — render everything
-      if (data) Object.entries(data).forEach(([id,m]) => { if (m) renderMsg(id,m) })
-    } else {
-      // Incremental update: a new message or an edit to an existing one
-      if (!data) return
-      const id = path.replace(/^\//,'').split('/')[0]
-      if (!id) return
-      if (typeof data === 'object' && data.u && data.t) {
-        renderMsg(id, data)  // new message
-      } else {
-        // Could be a sub-field update (e.g. deleted:true) — re-fetch the full message
-        fbGet(`rooms/${room}/messages/${id}`).then(m => { if (m) { msgCache[id]=m; if (seenIds.has(id)) refreshMsg(id,m) } })
-      }
+    if (!data) return
+
+    if (firstSnapshot) {
+      // This is the initial snapshot containing all pre-existing messages.
+      // Add all their IDs to historyIds so they never render.
+      firstSnapshot = false
+      Object.keys(data).forEach(id => historyIds.add(id))
+      return
     }
+
+    // Every subsequent SSE event — iterate all keys and render new ones
+    Object.entries(data).forEach(([id, m]) => {
+      if (!m || typeof m !== 'object') return
+      if (historyIds.has(id)) return   // pre-existed, skip
+      if (seenIds.has(id)) { refreshMsg(id, m); return }  // update existing
+      renderMsg(id, m)  // brand new message
+    })
   }, true /* primary — controls conn pill */)
 
   // ── Listen: reactions (dedicated node for reliable cross-user sync) ──
