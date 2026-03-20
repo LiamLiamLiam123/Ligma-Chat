@@ -64,6 +64,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   border-radius: 5px; cursor: pointer; font-size: 14px; white-space: nowrap;
 }
 #admin-btn:hover { background: #4a2a00; }
+
 #admin-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #1e1200; border: 1px solid #7c4a00; border-radius: 10px;
@@ -77,6 +78,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .cmd-name { font-size: 0.88em; font-weight: bold; color: #ffb347; font-family: monospace; }
 .cmd-desc { font-size: 0.78em; color: #aa8855; line-height: 1.4; }
 .cmd-example { font-size: 0.75em; color: #665533; font-family: monospace; margin-top: 2px; }
+
 #users-panel {
   display: none; position: absolute; top: 42px; right: 12px;
   background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
@@ -90,11 +92,14 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #users-list li .dot { width: 8px; height: 8px; border-radius: 50%; background: #7dffaa; flex-shrink: 0; }
 #users-list li .uname { color: #ddd; }
 #users-list li .you { font-size: 0.75em; color: #666; }
+
+/* Slowmode bar */
 #slowmode-bar {
   display: none; background: #1a1a2e; border-left: 3px solid #ffd97d;
   padding: 5px 12px; font-size: 0.8em; color: #ffd97d; flex-shrink: 0;
 }
 #slowmode-bar.show { display: block; }
+
 #pin-bar {
   display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
   padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
@@ -102,6 +107,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 }
 #pin-bar.show { display: flex; }
 #pin-bar .pin-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 #messages {
   flex: 1; overflow-y: auto; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 6px; min-height: 0;
@@ -113,6 +119,8 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .announce-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
 .announce-text  { font-size: 1.05em; font-weight: bold; color: #e9d5ff; }
 .announce-by    { font-size: 0.72em; color: #7c3aed; margin-top: 4px; }
+
+/* Broadcast card */
 .broadcast-wrap {
   align-self: stretch; background: #1a1200;
   border: 1px solid #ffd97d55; border-radius: 10px; padding: 12px 16px; text-align: center;
@@ -120,6 +128,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .broadcast-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #ffd97d; margin-bottom: 4px; }
 .broadcast-text  { font-size: 1.05em; font-weight: bold; color: #fff3cd; }
 .broadcast-by    { font-size: 0.72em; color: #b8860b; margin-top: 4px; }
+
 #reply-bar {
   display: none; background: #2a2a2a; border-left: 3px solid #ff4757;
   padding: 5px 10px; font-size: 0.8em; color: #aaa;
@@ -128,6 +137,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #reply-bar.show { display: flex; }
 #reply-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 #reply-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; padding: 0 4px; }
+
 .msg-wrap { display: flex; flex-direction: column; gap: 2px; max-width: 72%; }
 .msg-wrap.self-wrap  { align-self: flex-end;   align-items: flex-end; }
 .msg-wrap.other-wrap { align-self: flex-start; align-items: flex-start; }
@@ -175,7 +185,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   padding: 10px 18px; border: none; border-radius: 20px;
   background: #ff4757; color: #fff; cursor: pointer; font-size: 14px; min-width: 70px;
 }
-#input-row button:disabled { opacity: 0.4; cursor: not-allowed; background: #555; }
+#input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -201,6 +211,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
       <button id="users-btn">👥 Users <span id="user-count"></span></button>
     </div>
   </div>
+
   <div id="admin-panel">
     <h3>👑 Admin Commands</h3>
     <div class="cmd-row">
@@ -225,7 +236,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
     </div>
     <div class="cmd-row">
       <div class="cmd-name">/announce &lt;text&gt;</div>
-      <div class="cmd-desc">Sends a highlighted announcement to this room.</div>
+      <div class="cmd-desc">Sends a big highlighted announcement to everyone.</div>
       <div class="cmd-example">e.g. /announce Welcome everyone!</div>
     </div>
     <div class="cmd-row">
@@ -235,15 +246,16 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
     </div>
     <div class="cmd-row">
       <div class="cmd-name">/slowmode &lt;seconds&gt;</div>
-      <div class="cmd-desc">Limits how often users can send. Use 0 to turn off.</div>
+      <div class="cmd-desc">Limits how often users can send messages. Use 0 to disable.</div>
       <div class="cmd-example">e.g. /slowmode 10 &nbsp;|&nbsp; /slowmode 0</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-name">/broadcast &lt;text&gt;</div>
-      <div class="cmd-desc">Sends a global message visible in ALL rooms.</div>
+      <div class="cmd-desc">Sends a highlighted message visible in ALL rooms.</div>
       <div class="cmd-example">e.g. /broadcast Server restart in 5 mins!</div>
     </div>
   </div>
+
   <div id="slowmode-bar">🐢 Slowmode: <span id="slowmode-label"></span></div>
   <div id="pin-bar">
     <span>📌</span>
@@ -270,11 +282,11 @@ const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
 const ADMIN_NAME = 'Admin:Liam'
 const ADMIN_PASS = 'ILoveCats'
 const REACTIONS  = [
-  { emoji:'👍', key:'like'  },
+  { emoji:'👍', key:'like' },
   { emoji:'❤️', key:'heart' },
-  { emoji:'😂', key:'lol'   },
-  { emoji:'😮', key:'wow'   },
-  { emoji:'😢', key:'sad'   },
+  { emoji:'😂', key:'lol' },
+  { emoji:'😮', key:'wow' },
+  { emoji:'😢', key:'sad' },
 ]
 const BAD_WORDS = ['fuck','shit','ass','bitch','cunt','dick','pussy','bastard','damn','crap']
 
@@ -284,58 +296,54 @@ function filterProfanity(text) {
   return out
 }
 
-let username, room, muted = false, joinTime = 0, replyingTo = null
-let slowmodeSeconds = 0, lastSentAt = 0, cooldownTimer = null
-let msgListener, cmdListener, typingListener, pinListener, slowmodeListener, broadcastListener
-let typingTimer, presenceTimer
+let username, room, muted=false, joinTime=0, replyingTo=null
+let slowmodeSeconds=0, lastSentAt=0, cooldownTimer=null
+let msgListener, cmdListener, typingListener, pinListener, broadcastListener, typingTimer, presenceTimer
 
 const $ = id => document.getElementById(id)
 const joinDiv=$('join'), chatDiv=$('chat'), uInput=$('u-input'), rInput=$('r-input')
 const adminPwWrap=$('admin-pw-wrap'), adminPwInput=$('admin-pw-input')
 const joinBtn=$('join-btn'), joinErr=$('join-err'), roomTitle=$('room-title')
 const connPill=$('conn-pill'), usersBtn=$('users-btn'), usersPanel=$('users-panel')
-const usersList=$('users-list'), userCount=$('user-count')
-const pinBar=$('pin-bar'), pinText=$('pin-text')
-const slowmodeBar=$('slowmode-bar'), slowmodeLabel=$('slowmode-label')
-const messagesDiv=$('messages'), replyBar=$('reply-bar')
+const usersList=$('users-list'), userCount=$('user-count'), pinBar=$('pin-bar')
+const pinText=$('pin-text'), messagesDiv=$('messages'), replyBar=$('reply-bar')
 const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
 const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
 const adminBtn=$('admin-btn'), adminPanel=$('admin-panel')
+const slowmodeBar=$('slowmode-bar'), slowmodeLabel=$('slowmode-label')
 
-// Show admin password field when admin username typed
+// Show admin password field only when admin name is typed
 uInput.addEventListener('input', () => {
   adminPwWrap.style.display = uInput.value.trim() === ADMIN_NAME ? 'flex' : 'none'
   if (uInput.value.trim() !== ADMIN_NAME) adminPwInput.value = ''
 })
 
-usersBtn.onclick  = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
-adminBtn.onclick  = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
+// Panel toggles — close each other
+usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
+adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
 document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
 ;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
 replyCancel.onclick = clearReply
 
-// ── Firebase REST helpers ──
-const fb      = p     => `${FB}/${p}.json`
-const fbPost  = (p,d) => fetch(fb(p), {method:'POST',   body:JSON.stringify(d)}).then(r=>r.json())
-const fbSet   = (p,d) => fetch(fb(p), {method:'PUT',    body:JSON.stringify(d)})
-const fbDel   = p     => fetch(fb(p), {method:'DELETE'})
-const fbGet   = p     => fetch(fb(p)).then(r=>r.json())
-const fbPatch = (p,d) => fetch(fb(p), {method:'PATCH',  body:JSON.stringify(d)})
+// ── Firebase REST ──
+const fb      = p    => `${FB}/${p}.json`
+const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
+const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
+const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
+const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
+const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
 
-// ── SSE listener ──
-// mainConn=true means this listener owns the connection pill + input enable/disable
-function fbListen(path, onPut, onPatch, mainConn=false) {
+// ── SSE listener — unchanged from original stable version ──
+function fbListen(path, onPut, onPatch) {
   const es = new EventSource(fb(path))
-  es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))            } catch(err) { console.error('SSE put err', path, err) } })
-  es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('SSE patch err', path, err) } })
-  if (mainConn) {
-    es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
-    es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
-  }
+  es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
+  es.addEventListener('patch', e => { try { (onPatch||onPut)(JSON.parse(e.data)) } catch(err) { console.error('patch err',err) } })
+  es.onopen  = () => { connPill.textContent='connected';    connPill.className='ok';  msgInput.disabled=false; sendBtn.disabled=false }
+  es.onerror = () => { connPill.textContent='reconnecting…';connPill.className='err'; msgInput.disabled=true;  sendBtn.disabled=true  }
   return es
 }
 
-// ── Message cache & dedup ──
+// ── Message cache & dedup — unchanged from original ──
 const msgCache = {}
 const seen = new Set()
 
@@ -345,18 +353,20 @@ function handleMsgPut({ path, data }) {
     Object.entries(data).forEach(([id, m]) => {
       if (!m) return
       msgCache[id] = m
-      dispatchMsg(id, m)
+      if (m.announce) renderAnnounce(id, m)
+      else renderMsg(id, m)
     })
   } else {
     const id = path.replace(/^\//, '')
     if (!data || typeof data !== 'object') return
     msgCache[id] = data
-    dispatchMsg(id, data)
+    if (data.announce) renderAnnounce(id, data)
+    else renderMsg(id, data)
   }
 }
 
 function handleMsgPatch({ path, data }) {
-  if (data == null) return
+  if (data === null || data === undefined) return
   if (path === '/' || path === '') {
     Object.entries(data).forEach(([id, changes]) => {
       if (!changes) return
@@ -377,12 +387,6 @@ function handleMsgPatch({ path, data }) {
   }
 }
 
-function dispatchMsg(id, m) {
-  if (m.broadcast) renderBroadcast(id, m)
-  else if (m.announce) renderAnnounce(id, m)
-  else renderMsg(id, m)
-}
-
 function renderMsg(id, m) {
   if (!m || !m.u || !m.t) return
   if (m.ts < joinTime) return
@@ -391,7 +395,7 @@ function renderMsg(id, m) {
 
   const isMe = m.u === username
   const wrap = document.createElement('div')
-  wrap.className = `msg-wrap ${isMe ? 'self-wrap' : 'other-wrap'}`
+  wrap.className = `msg-wrap ${isMe?'self-wrap':'other-wrap'}`
   wrap.dataset.id = id
 
   if (m.replyTo) {
@@ -402,7 +406,7 @@ function renderMsg(id, m) {
   }
 
   const bubble = document.createElement('div')
-  bubble.className = `msg ${isMe ? 'self' : 'other'}`
+  bubble.className = `msg ${isMe?'self':'other'}`
   bubble.dataset.id = id
   if (m.deleted) bubble.classList.add('deleted')
 
@@ -429,7 +433,7 @@ function renderMsg(id, m) {
     const b = document.createElement('button')
     b.className = 'react-opt'
     b.textContent = emoji
-    b.onclick = () => toggleReaction(id, key)
+    b.onclick = () => toggleReaction(id, key, emoji)
     picker.appendChild(b)
   })
   wrap.appendChild(picker)
@@ -443,14 +447,14 @@ function renderMsg(id, m) {
   replyBtn.onclick = () => setReply(id, m.u, m.t)
   actions.appendChild(replyBtn)
 
-  if ((isMe || username === ADMIN_NAME) && !m.deleted) {
+  if ((isMe || username===ADMIN_NAME) && !m.deleted) {
     const delBtn = document.createElement('button')
     delBtn.className = 'action-btn'
     delBtn.textContent = '🗑 Delete'
     delBtn.onclick = () => fbPatch(`rooms/${room}/messages/${id}`, {deleted:true})
     actions.appendChild(delBtn)
   }
-  if (username === ADMIN_NAME && !m.deleted) {
+  if (username===ADMIN_NAME && !m.deleted) {
     const pinBtn = document.createElement('button')
     pinBtn.className = 'action-btn'
     pinBtn.textContent = '📌 Pin'
@@ -473,8 +477,8 @@ function renderAnnounce(id, m) {
 }
 
 function renderBroadcast(id, m) {
-  if (!m || m.ts < joinTime || seen.has(id)) return
-  seen.add(id)
+  if (!m || m.ts < joinTime || seen.has('bc_'+id)) return
+  seen.add('bc_'+id)
   const wrap = document.createElement('div')
   wrap.className = 'broadcast-wrap'
   wrap.innerHTML = `<div class="broadcast-label">📡 Global Broadcast</div><div class="broadcast-text">${filterProfanity(m.t)}</div><div class="broadcast-by">— ${m.u}</div>`
@@ -500,7 +504,7 @@ function renderReactions(div, reactions) {
   Object.entries(reactions).forEach(([uid, keys]) => {
     if (!keys || typeof keys !== 'object') return
     Object.keys(keys).forEach(key => {
-      counts[key] = (counts[key] || 0) + 1
+      counts[key] = (counts[key]||0) + 1
       if (uid === username) mine.add(key)
     })
   })
@@ -509,7 +513,7 @@ function renderReactions(div, reactions) {
     const pill = document.createElement('span')
     pill.className = 'reaction-pill' + (mine.has(key) ? ' mine' : '')
     pill.textContent = `${emoji} ${counts[key]}`
-    pill.onclick = () => toggleReaction(div.dataset.id, key)
+    pill.onclick = () => toggleReaction(div.dataset.id, key, emoji)
     div.appendChild(pill)
   })
 }
@@ -522,32 +526,33 @@ function addSys(text, cls='sys') {
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-function setReply(id, u, t) {
-  replyingTo = {id, u, t}
-  replyPreviewText.textContent = `Replying to ${u}: ${t}`
-  replyBar.classList.add('show')
-  msgInput.focus()
-}
-function clearReply() { replyingTo = null; replyBar.classList.remove('show') }
+function setReply(id,u,t) { replyingTo={id,u,t}; replyPreviewText.textContent=`Replying to ${u}: ${t}`; replyBar.classList.add('show'); msgInput.focus() }
+function clearReply() { replyingTo=null; replyBar.classList.remove('show') }
 
-async function toggleReaction(msgId, key) {
+async function toggleReaction(msgId, key, emoji) {
   const path = `rooms/${room}/messages/${msgId}/reactions/${username}/${key}`
-  const currentlySet = msgCache[msgId]?.reactions?.[username]?.[key]
-  if (currentlySet) await fbDel(path)
-  else await fbSet(path, true)
+  const cached = msgCache[msgId]
+  const currentlySet = cached?.reactions?.[username]?.[key]
+  if (currentlySet) {
+    await fbDel(path)
+  } else {
+    await fbSet(path, true)
+  }
   const updated = await fbGet(`rooms/${room}/messages/${msgId}`)
-  if (updated) { msgCache[msgId] = updated; updateMsg(msgId, updated) }
+  if (updated) {
+    msgCache[msgId] = updated
+    updateMsg(msgId, updated)
+  }
 }
 
 async function doPin(u, t) { await fbSet(`rooms/${room}/pin`, {u, t, ts:Date.now()}) }
 
 function showPin(data) {
-  if (!data || !data.t) { pinBar.classList.remove('show'); return }
+  if (!data||!data.t) { pinBar.classList.remove('show'); return }
   pinText.textContent = `${data.u}: ${data.t}`
   pinBar.classList.add('show')
 }
 
-// ── Slowmode ──
 function applySlowmode(secs) {
   slowmodeSeconds = secs
   if (secs > 0) {
@@ -558,216 +563,207 @@ function applySlowmode(secs) {
   }
 }
 
-// ── Presence ──
 async function refreshPresence() {
   const data = await fbGet(`rooms/${room}/presence`)
   const now = Date.now()
-  const online = data ? Object.values(data).filter(u => now - u.ts < 15000) : []
+  const online = data ? Object.values(data).filter(u=>now-u.ts<15000) : []
   userCount.textContent = online.length ? `(${online.length})` : ''
   usersList.innerHTML = ''
   if (!online.length) {
-    const li = document.createElement('li')
-    li.style.cssText = 'color:#555;font-size:0.85em'
-    li.textContent = 'Nobody else here'
-    usersList.appendChild(li)
-    return
+    const li=document.createElement('li'); li.style.cssText='color:#555;font-size:0.85em'; li.textContent='Nobody else here'; usersList.appendChild(li); return
   }
   online.forEach(u => {
     const li = document.createElement('li')
-    li.innerHTML = `<span class="dot"></span><span class="uname">${u.name}</span>${u.name === username ? '<span class="you">(you)</span>' : ''}`
+    li.innerHTML = `<span class="dot"></span><span class="uname">${u.name}</span>${u.name===username?'<span class="you">(you)</span>':''}`
     usersList.appendChild(li)
   })
 }
 
 async function renderTyping() {
   const data = await fbGet(`rooms/${room}/typing`)
-  if (!data) { typingDiv.textContent = ''; return }
+  if (!data) { typingDiv.textContent=''; return }
   const now = Date.now()
-  const who = Object.entries(data).filter(([u, ts]) => u !== username && now - ts < 3000).map(([u]) => u)
-  typingDiv.textContent = who.length ? who.join(', ') + (who.length === 1 ? ' is typing…' : ' are typing…') : ''
+  const who = Object.entries(data).filter(([u,ts])=>u!==username&&now-ts<3000).map(([u])=>u)
+  typingDiv.textContent = who.length ? who.join(', ')+(who.length===1?' is typing…':' are typing…') : ''
 }
 
-// ── Command listener ──
 function listenForCommands() {
   cmdListener?.close()
   cmdListener = fbListen(`rooms/${room}/commands/${username}`, ({data}) => {
-    if (!data || !data.cmd) return
-    const {cmd, by, value} = data
-    if (cmd === 'kick') {
+    if (!data||!data.cmd) return
+    const {cmd,by,value} = data
+    if (cmd==='kick') {
       alert(`You have been kicked by ${by}`)
-      fbDel(`rooms/${room}/presence/${username}`).finally(() =>
-        fbDel(`rooms/${room}/commands/${username}`).finally(() => location.reload())
-      )
+      fbDel(`rooms/${room}/presence/${username}`).finally(() => {
+        fbDel(`rooms/${room}/commands/${username}`).finally(() => {
+          location.reload()
+        })
+      })
     }
-    if (cmd === 'mute')   { muted = true;  addSys(`Muted by ${by}`, 'admin');   fbDel(`rooms/${room}/commands/${username}`) }
-    if (cmd === 'unmute') { muted = false; addSys(`Unmuted by ${by}`, 'admin'); fbDel(`rooms/${room}/commands/${username}`) }
-    if (cmd === 'rename') {
-      const old = username; username = value
+    if (cmd==='mute')   { muted=true;  addSys(`Muted by ${by}`,'admin');   fbDel(`rooms/${room}/commands/${username}`) }
+    if (cmd==='unmute') { muted=false; addSys(`Unmuted by ${by}`,'admin'); fbDel(`rooms/${room}/commands/${username}`) }
+    if (cmd==='rename') {
+      const old=username; username=value
       fbDel(`rooms/${room}/presence/${old}`)
-      fbSet(`rooms/${room}/presence/${username}`, {name:username, ts:Date.now()})
-      addSys(`Renamed to "${value}" by ${by}`, 'admin')
+      fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
+      addSys(`Renamed to "${value}" by ${by}`,'admin')
       fbDel(`rooms/${room}/commands/${old}`)
       listenForCommands()
     }
   })
 }
 
-// ── Admin commands ──
+// Separate SSE for broadcast — uses its own fbListen but we reassign onopen/onerror
+// so it doesn't fight with the main messages listener over the conn pill
+function listenBroadcast() {
+  broadcastListener?.close()
+  const path = `broadcast`
+  const es = new EventSource(fb(path))
+  es.addEventListener('put', e => {
+    try {
+      const { path: p, data } = JSON.parse(e.data)
+      if (!data) return
+      if (p === '/' || p === '') {
+        Object.entries(data).forEach(([id, m]) => { if (m) renderBroadcast(id, m) })
+      } else {
+        const id = p.replace(/^\//, '')
+        if (data && typeof data === 'object') renderBroadcast(id, data)
+      }
+    } catch(err) { console.error('broadcast put err', err) }
+  })
+  es.addEventListener('patch', e => {
+    try {
+      const { path: p, data } = JSON.parse(e.data)
+      if (!data) return
+      const id = p.replace(/^\//, '').split('/')[0]
+      if (id && typeof data === 'object') renderBroadcast(id, data)
+    } catch(err) { console.error('broadcast patch err', err) }
+  })
+  broadcastListener = es
+}
+
 async function runAdminCommand(cmd, args) {
-  if (cmd === 'announce') {
-    await fbPost(`rooms/${room}/messages`, {u:username, t:args, ts:Date.now(), announce:true})
-    addSys('📢 Sent', 'admin'); return
-  }
-  if (cmd === 'pin') {
-    await doPin(username, args); addSys('📌 Pinned', 'admin'); return
-  }
-  if (cmd === 'slowmode') {
+  if (cmd==='announce') { await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true}); addSys('📢 Sent','admin'); return }
+  if (cmd==='pin')      { await doPin(username,args); addSys('📌 Pinned','admin'); return }
+  if (cmd==='slowmode') {
     const secs = parseInt(args, 10)
-    if (isNaN(secs) || secs < 0) { addSys('Usage: /slowmode <seconds> (use 0 to disable)', 'admin'); return }
+    if (isNaN(secs) || secs < 0) { addSys('Usage: /slowmode <seconds> (use 0 to disable)','admin'); return }
     if (secs === 0) {
       await fbDel(`rooms/${room}/slowmode`)
-      addSys('🐢 Slowmode disabled', 'admin')
+      addSys('🐢 Slowmode disabled','admin')
     } else {
       await fbSet(`rooms/${room}/slowmode`, {seconds:secs, by:username, ts:Date.now()})
-      addSys(`🐢 Slowmode set to ${secs}s`, 'admin')
+      addSys(`🐢 Slowmode set to ${secs}s`,'admin')
     }
     return
   }
-  if (cmd === 'broadcast') {
-    // Broadcast posts into every room's messages feed via a global /broadcast node.
-    // Each client listens to /broadcast and renders it locally.
-    await fbPost(`broadcast`, {u:username, t:args, ts:Date.now(), broadcast:true})
-    addSys('📡 Broadcast sent to all rooms', 'admin'); return
+  if (cmd==='broadcast') {
+    await fbPost(`broadcast`, {u:username, t:args, ts:Date.now()})
+    addSys('📡 Broadcast sent to all rooms','admin'); return
   }
-  const [target, ...rest] = args.split(' ')
+  const [target,...rest] = args.split(' ')
   const value = rest.join(' ')
-  if (cmd === 'rename') {
-    if (!target || !value) { addSys('Usage: /rename <user> <newname>', 'admin'); return }
-    await fbSet(`rooms/${room}/commands/${target}`, {cmd:'rename', by:username, value, ts:Date.now()})
-    addSys(`⚡ Renamed ${target} → ${value}`, 'admin'); return
+  if (cmd==='rename') {
+    if (!target||!value) { addSys('Usage: /rename <user> <newname>','admin'); return }
+    await fbSet(`rooms/${room}/commands/${target}`,{cmd:'rename',by:username,value,ts:Date.now()})
+    addSys(`⚡ Renamed ${target} → ${value}`,'admin'); return
   }
-  if (!target) { addSys(`Usage: /${cmd} <username>`, 'admin'); return }
-  await fbSet(`rooms/${room}/commands/${target}`, {cmd, by:username, ts:Date.now()})
-  addSys(`⚡ /${cmd} → ${target}`, 'admin')
+  if (!target) { addSys(`Usage: /${cmd} <username>`,'admin'); return }
+  await fbSet(`rooms/${room}/commands/${target}`,{cmd,by:username,ts:Date.now()})
+  addSys(`⚡ /${cmd} → ${target}`,'admin')
 }
 
 async function isUsernameTaken(name) {
   const p = await fbGet(`rooms/${room}/presence`)
   if (!p) return false
   const now = Date.now()
-  return Object.values(p).some(u => u.name === name && now - u.ts < 15000)
+  return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
 }
 
 // ── JOIN ──
 joinBtn.onclick = async () => {
   const raw = uInput.value.trim() || 'Anon'
-  room = rInput.value.trim().replace(/[^a-z0-9_-]/gi, '-').toLowerCase() || 'general'
-  joinBtn.disabled = true; joinBtn.textContent = 'Connecting…'; joinErr.textContent = ''
+  room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
+  joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
   if (raw === ADMIN_NAME) {
     if (adminPwInput.value !== ADMIN_PASS) {
-      joinErr.textContent = '❌ Incorrect admin password.'
-      joinBtn.disabled = false; joinBtn.textContent = 'Join Room'
-      adminPwInput.value = ''; adminPwInput.focus(); return
+      joinErr.textContent='❌ Incorrect admin password.'
+      joinBtn.disabled=false; joinBtn.textContent='Join Room'
+      adminPwInput.value=''; adminPwInput.focus(); return
     }
   } else {
-    if (/\s/.test(raw)) { joinErr.textContent='Username cannot contain spaces.'; joinBtn.disabled=false; joinBtn.textContent='Join Room'; return }
-    if (raw.length > 25) { joinErr.textContent='Username must be 25 characters or less.'; joinBtn.disabled=false; joinBtn.textContent='Join Room'; return }
+    if (/\s/.test(raw)) {
+      joinErr.textContent='Username cannot contain spaces.'
+      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+    }
+    if (raw.length > 25) {
+      joinErr.textContent='Username must be 25 characters or less.'
+      joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
+    }
   }
 
   try {
     const r = await fetch(fb(`rooms/${room}/ping`))
-    if (!r.ok) throw new Error('HTTP ' + r.status)
+    if (!r.ok) throw new Error('HTTP '+r.status)
   } catch(e) {
-    joinErr.textContent = 'Cannot reach Firebase: ' + e.message
-    joinBtn.disabled = false; joinBtn.textContent = 'Join Room'; return
+    joinErr.textContent='Cannot reach Firebase: '+e.message
+    joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
 
-  if (raw !== ADMIN_NAME && await isUsernameTaken(raw)) {
-    joinErr.textContent = `"${raw}" is already taken. Pick another name.`
-    joinBtn.disabled = false; joinBtn.textContent = 'Join Room'; return
+  if (raw!==ADMIN_NAME && await isUsernameTaken(raw)) {
+    joinErr.textContent=`"${raw}" is already taken. Pick another name.`
+    joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
   }
 
-  username = raw; joinTime = Date.now()
-  joinDiv.style.display = 'none'; chatDiv.style.display = 'flex'
-  roomTitle.textContent = '#' + room + (username === ADMIN_NAME ? ' 👑' : '')
-  if (username === ADMIN_NAME) adminBtn.style.display = 'block'
+  username=raw; joinTime=Date.now()
+  joinDiv.style.display='none'; chatDiv.style.display='flex'
+  roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
+  if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  // Only the messages listener manages the conn pill + input state (mainConn=true)
-  msgListener = fbListen(`rooms/${room}/messages`, handleMsgPut, handleMsgPatch, true)
+  // Original stable message listener — untouched
+  msgListener = fbListen(`rooms/${room}/messages`, handleMsgPut, handleMsgPatch)
 
-  // Pin listener
   pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
-  fbGet(`rooms/${room}/pin`).then(showPin)
-
-  // Typing listener
+  const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
   typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
-
-  // Slowmode listener — reads {path, data} from SSE, extracts seconds
-  slowmodeListener = fbListen(`rooms/${room}/slowmode`, ({data}) => {
-    applySlowmode(data && typeof data === 'object' && data.seconds > 0 ? data.seconds : 0)
-  })
-  fbGet(`rooms/${room}/slowmode`).then(sm => {
-    applySlowmode(sm && sm.seconds > 0 ? sm.seconds : 0)
-  })
-
-  // Global broadcast listener — separate from room messages
-  broadcastListener = fbListen(`broadcast`, ({path, data}) => {
-    if (!data) return
-    if (path === '/' || path === '') {
-      // Initial snapshot — only show messages after we joined
-      if (typeof data === 'object') {
-        Object.entries(data).forEach(([id, m]) => {
-          if (m && typeof m === 'object') renderBroadcast('bc_' + id, m)
-        })
-      }
-    } else {
-      // New broadcast posted
-      const id = path.replace(/^\//, '')
-      if (data && typeof data === 'object') renderBroadcast('bc_' + id, data)
-    }
-  })
-
   listenForCommands()
+  listenBroadcast()
 
-  // Write presence then refresh after short delay to ensure Firebase confirms write
-  const updatePresence = () => fbSet(`rooms/${room}/presence/${username}`, {name:username, ts:Date.now()})
-  await updatePresence()
-  await new Promise(r => setTimeout(r, 300))
-  await refreshPresence()
-  presenceTimer = setInterval(() => { updatePresence(); refreshPresence(); renderTyping() }, 8000)
+  // Load current slowmode state
+  const sm = await fbGet(`rooms/${room}/slowmode`)
+  applySlowmode(sm && sm.seconds > 0 ? sm.seconds : 0)
 
-  addSys('You joined #' + room)
+  const up = () => fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
+  await up(); await refreshPresence()
+  presenceTimer = setInterval(()=>{ up(); refreshPresence(); renderTyping() }, 8000)
+
+  addSys('You joined #'+room)
   msgInput.focus()
 }
 
-// ── Typing indicator ──
+// ── TYPING ──
 msgInput.addEventListener('input', () => {
   fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
-  typingTimer = setTimeout(() => fbDel(`rooms/${room}/typing/${username}`), 2500)
+  typingTimer = setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
-// ── Send ──
+// ── SEND ──
 async function sendMessage() {
-  const text = msgInput.value.trim()
-  if (!text) return
+  const text=msgInput.value.trim(); if(!text)return
 
-  // Admin commands
-  if (text.startsWith('/') && username === ADMIN_NAME) {
-    msgInput.value = ''
-    const parts = text.slice(1).split(' ')
-    const cmd = parts[0].toLowerCase()
-    const args = parts.slice(1).join(' ').trim()
-    const valid = ['kick','mute','unmute','rename','announce','pin','slowmode','broadcast']
-    if (!valid.includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.', 'admin'); return }
-    if (!args) { addSys(`Usage: /${cmd} <args>`, 'admin'); return }
-    await runAdminCommand(cmd, args); return
+  if (text.startsWith('/') && username===ADMIN_NAME) {
+    msgInput.value=''
+    const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
+    if (!['kick','mute','unmute','rename','announce','pin','slowmode','broadcast'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
+    if (!args) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
+    await runAdminCommand(cmd,args); return
   }
 
   if (muted) { addSys('You are muted.'); return }
 
-  // Slowmode check (admin exempt)
+  // Slowmode check — admin is exempt
   if (username !== ADMIN_NAME && slowmodeSeconds > 0) {
     const elapsed = (Date.now() - lastSentAt) / 1000
     if (elapsed < slowmodeSeconds) {
@@ -776,13 +772,12 @@ async function sendMessage() {
     }
   }
 
-  msgInput.value = ''
-  clearTimeout(typingTimer)
+  msgInput.value=''; clearTimeout(typingTimer)
   fbDel(`rooms/${room}/typing/${username}`)
 
   lastSentAt = Date.now()
 
-  // Show countdown on send button during cooldown
+  // Countdown on send button during cooldown
   if (username !== ADMIN_NAME && slowmodeSeconds > 0) {
     sendBtn.disabled = true
     let remaining = slowmodeSeconds
@@ -801,24 +796,25 @@ async function sendMessage() {
   }
 
   const payload = {u:username, t:text, ts:Date.now()}
-  if (replyingTo) { payload.replyTo = {id:replyingTo.id, u:replyingTo.u, t:replyingTo.t} }
+  if (replyingTo) { payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t} }
   clearReply()
   await fbPost(`rooms/${room}/messages`, payload)
 }
 
 sendBtn.onclick = sendMessage
-msgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } })
+msgInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} })
 
 window.addEventListener('beforeunload', () => {
   fbDel(`rooms/${room}/presence/${username}`)
   fbDel(`rooms/${room}/typing/${username}`)
   clearInterval(presenceTimer); clearInterval(cooldownTimer)
   msgListener?.close(); cmdListener?.close(); typingListener?.close()
-  pinListener?.close(); slowmodeListener?.close(); broadcastListener?.close()
+  pinListener?.close(); broadcastListener?.close()
 })
 
-uInput.addEventListener('keydown', e => { if (e.key === ' ') e.preventDefault() })
-uInput.addEventListener('input',   () => { uInput.value = uInput.value.replace(/\s/g, '') })
+uInput.setAttribute("maxlength","25")
+uInput.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault() })
+uInput.addEventListener("input", () => { uInput.value = uInput.value.replace(/\s/g, "") })
 uInput.focus()
 </script>
 </body>
