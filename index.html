@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,14 +31,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
   background: #ff4757; color: #fff; cursor: pointer; font-size: 15px;
 }
 #join-err { color: #ff7d7d; font-size: 0.85em; min-height: 18px; text-align: center; }
-#admin-pw-wrap {
-  display: none; flex-direction: column; align-items: center; gap: 6px;
-}
-#admin-pw-wrap label { font-size: 0.85em; color: #ffd97d; }
-#admin-pw-wrap input {
-  padding: 10px; border: 1px solid #7c4a00; border-radius: 5px;
-  background: #3a1f00; color: #ffd97d; width: 280px; font-size: 15px;
-}
 #chat {
   display: none; flex-direction: column; width: 100%;
   max-width: 540px; flex: 1; min-height: 0; position: relative;
@@ -93,13 +86,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #users-list li .uname { color: #ddd; }
 #users-list li .you { font-size: 0.75em; color: #666; }
 
-/* Slowmode bar */
-#slowmode-bar {
-  display: none; background: #1a1a2e; border-left: 3px solid #ffd97d;
-  padding: 5px 12px; font-size: 0.8em; color: #ffd97d; flex-shrink: 0;
-}
-#slowmode-bar.show { display: block; }
-
 #pin-bar {
   display: none; background: #1e1e2e; border-left: 3px solid #a78bfa;
   padding: 6px 12px; font-size: 0.82em; color: #c4b5fd;
@@ -119,15 +105,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 .announce-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 4px; }
 .announce-text  { font-size: 1.05em; font-weight: bold; color: #e9d5ff; }
 .announce-by    { font-size: 0.72em; color: #7c3aed; margin-top: 4px; }
-
-/* Broadcast card */
-.broadcast-wrap {
-  align-self: stretch; background: #1a1200;
-  border: 1px solid #ffd97d55; border-radius: 10px; padding: 12px 16px; text-align: center;
-}
-.broadcast-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; color: #ffd97d; margin-bottom: 4px; }
-.broadcast-text  { font-size: 1.05em; font-weight: bold; color: #fff3cd; }
-.broadcast-by    { font-size: 0.72em; color: #b8860b; margin-top: 4px; }
 
 #reply-bar {
   display: none; background: #2a2a2a; border-left: 3px solid #ff4757;
@@ -183,7 +160,7 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 #input-row input:disabled { opacity: 0.4; }
 #input-row button {
   padding: 10px 18px; border: none; border-radius: 20px;
-  background: #ff4757; color: #fff; cursor: pointer; font-size: 14px; min-width: 70px;
+  background: #ff4757; color: #fff; cursor: pointer; font-size: 14px;
 }
 #input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
@@ -192,12 +169,8 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <h1>Ligma Chat 💬</h1>
 
 <div id="join">
-  <input id="u-input" placeholder="Username" maxlength="25">
+  <input id="u-input" placeholder="Username" maxlength="24">
   <input id="r-input" placeholder="Room code" maxlength="32" value="general">
-  <div id="admin-pw-wrap">
-    <label>👑 Admin password</label>
-    <input id="admin-pw-input" type="password" placeholder="Password">
-  </div>
   <button id="join-btn">Join Room</button>
   <div id="join-err"></div>
 </div>
@@ -244,19 +217,8 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
       <div class="cmd-desc">Pins a message to the top of the chat.</div>
       <div class="cmd-example">e.g. /pin Rules: be nice!</div>
     </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/slowmode &lt;seconds&gt;</div>
-      <div class="cmd-desc">Limits how often users can send messages. Use 0 to disable.</div>
-      <div class="cmd-example">e.g. /slowmode 10 &nbsp;|&nbsp; /slowmode 0</div>
-    </div>
-    <div class="cmd-row">
-      <div class="cmd-name">/broadcast &lt;text&gt;</div>
-      <div class="cmd-desc">Sends a highlighted message visible in ALL rooms.</div>
-      <div class="cmd-example">e.g. /broadcast Server restart in 5 mins!</div>
-    </div>
   </div>
 
-  <div id="slowmode-bar">🐢 Slowmode: <span id="slowmode-label"></span></div>
   <div id="pin-bar">
     <span>📌</span>
     <span class="pin-text" id="pin-text"></span>
@@ -280,7 +242,6 @@ h1 { margin: 10px 0; color: #ff4757; flex-shrink: 0; }
 <script>
 const FB         = 'https://ligma--chat-default-rtdb.firebaseio.com'
 const ADMIN_NAME = 'Admin:Liam'
-const ADMIN_PASS = 'ILoveCats'
 const REACTIONS  = [
   { emoji:'👍', key:'like' },
   { emoji:'❤️', key:'heart' },
@@ -297,12 +258,10 @@ function filterProfanity(text) {
 }
 
 let username, room, muted=false, joinTime=0, replyingTo=null
-let slowmodeSeconds=0, lastSentAt=0, cooldownTimer=null
-let msgListener, cmdListener, typingListener, pinListener, broadcastListener, typingTimer, presenceTimer
+let msgListener, cmdListener, typingListener, pinListener, typingTimer, presenceTimer
 
 const $ = id => document.getElementById(id)
 const joinDiv=$('join'), chatDiv=$('chat'), uInput=$('u-input'), rInput=$('r-input')
-const adminPwWrap=$('admin-pw-wrap'), adminPwInput=$('admin-pw-input')
 const joinBtn=$('join-btn'), joinErr=$('join-err'), roomTitle=$('room-title')
 const connPill=$('conn-pill'), usersBtn=$('users-btn'), usersPanel=$('users-panel')
 const usersList=$('users-list'), userCount=$('user-count'), pinBar=$('pin-bar')
@@ -310,22 +269,13 @@ const pinText=$('pin-text'), messagesDiv=$('messages'), replyBar=$('reply-bar')
 const replyPreviewText=$('reply-preview-text'), replyCancel=$('reply-cancel')
 const typingDiv=$('typing'), msgInput=$('msg-input'), sendBtn=$('send-btn')
 const adminBtn=$('admin-btn'), adminPanel=$('admin-panel')
-const slowmodeBar=$('slowmode-bar'), slowmodeLabel=$('slowmode-label')
 
-// Show admin password field only when admin name is typed
-uInput.addEventListener('input', () => {
-  adminPwWrap.style.display = uInput.value.trim() === ADMIN_NAME ? 'flex' : 'none'
-  if (uInput.value.trim() !== ADMIN_NAME) adminPwInput.value = ''
-})
-
-// Panel toggles — close each other
 usersBtn.onclick = e => { e.stopPropagation(); adminPanel.classList.remove('open'); usersPanel.classList.toggle('open') }
 adminBtn.onclick = e => { e.stopPropagation(); usersPanel.classList.remove('open'); adminPanel.classList.toggle('open') }
 document.addEventListener('click', () => { usersPanel.classList.remove('open'); adminPanel.classList.remove('open') })
 ;[usersPanel, adminPanel].forEach(p => p.addEventListener('click', e => e.stopPropagation()))
 replyCancel.onclick = clearReply
 
-// ── Firebase REST ──
 const fb      = p    => `${FB}/${p}.json`
 const fbPost  = (p,d)=> fetch(fb(p),{method:'POST',  body:JSON.stringify(d)}).then(r=>r.json())
 const fbSet   = (p,d)=> fetch(fb(p),{method:'PUT',   body:JSON.stringify(d)})
@@ -333,7 +283,6 @@ const fbDel   = p    => fetch(fb(p),{method:'DELETE'})
 const fbGet   = p    => fetch(fb(p)).then(r=>r.json())
 const fbPatch = (p,d)=> fetch(fb(p),{method:'PATCH', body:JSON.stringify(d)})
 
-// ── SSE listener — unchanged from original stable version ──
 function fbListen(path, onPut, onPatch) {
   const es = new EventSource(fb(path))
   es.addEventListener('put',   e => { try { onPut(JSON.parse(e.data))   } catch(err) { console.error('put err',err) } })
@@ -343,7 +292,6 @@ function fbListen(path, onPut, onPatch) {
   return es
 }
 
-// ── Message cache & dedup — unchanged from original ──
 const msgCache = {}
 const seen = new Set()
 
@@ -476,16 +424,6 @@ function renderAnnounce(id, m) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight
 }
 
-function renderBroadcast(id, m) {
-  if (!m || m.ts < joinTime || seen.has('bc_'+id)) return
-  seen.add('bc_'+id)
-  const wrap = document.createElement('div')
-  wrap.className = 'broadcast-wrap'
-  wrap.innerHTML = `<div class="broadcast-label">📡 Global Broadcast</div><div class="broadcast-text">${filterProfanity(m.t)}</div><div class="broadcast-by">— ${m.u}</div>`
-  messagesDiv.appendChild(wrap)
-  messagesDiv.scrollTop = messagesDiv.scrollHeight
-}
-
 function updateMsg(id, m) {
   if (!m) return
   const bubble = messagesDiv.querySelector(`.msg[data-id="${id}"]`)
@@ -553,16 +491,6 @@ function showPin(data) {
   pinBar.classList.add('show')
 }
 
-function applySlowmode(secs) {
-  slowmodeSeconds = secs
-  if (secs > 0) {
-    slowmodeLabel.textContent = `1 message every ${secs}s`
-    slowmodeBar.classList.add('show')
-  } else {
-    slowmodeBar.classList.remove('show')
-  }
-}
-
 async function refreshPresence() {
   const data = await fbGet(`rooms/${room}/presence`)
   const now = Date.now()
@@ -594,6 +522,7 @@ function listenForCommands() {
     const {cmd,by,value} = data
     if (cmd==='kick') {
       alert(`You have been kicked by ${by}`)
+      // Delete presence first so the username is free immediately on rejoin
       fbDel(`rooms/${room}/presence/${username}`).finally(() => {
         fbDel(`rooms/${room}/commands/${username}`).finally(() => {
           location.reload()
@@ -613,54 +542,9 @@ function listenForCommands() {
   })
 }
 
-// Separate SSE for broadcast — uses its own fbListen but we reassign onopen/onerror
-// so it doesn't fight with the main messages listener over the conn pill
-function listenBroadcast() {
-  broadcastListener?.close()
-  const path = `broadcast`
-  const es = new EventSource(fb(path))
-  es.addEventListener('put', e => {
-    try {
-      const { path: p, data } = JSON.parse(e.data)
-      if (!data) return
-      if (p === '/' || p === '') {
-        Object.entries(data).forEach(([id, m]) => { if (m) renderBroadcast(id, m) })
-      } else {
-        const id = p.replace(/^\//, '')
-        if (data && typeof data === 'object') renderBroadcast(id, data)
-      }
-    } catch(err) { console.error('broadcast put err', err) }
-  })
-  es.addEventListener('patch', e => {
-    try {
-      const { path: p, data } = JSON.parse(e.data)
-      if (!data) return
-      const id = p.replace(/^\//, '').split('/')[0]
-      if (id && typeof data === 'object') renderBroadcast(id, data)
-    } catch(err) { console.error('broadcast patch err', err) }
-  })
-  broadcastListener = es
-}
-
 async function runAdminCommand(cmd, args) {
   if (cmd==='announce') { await fbPost(`rooms/${room}/messages`,{u:username,t:args,ts:Date.now(),announce:true}); addSys('📢 Sent','admin'); return }
   if (cmd==='pin')      { await doPin(username,args); addSys('📌 Pinned','admin'); return }
-  if (cmd==='slowmode') {
-    const secs = parseInt(args, 10)
-    if (isNaN(secs) || secs < 0) { addSys('Usage: /slowmode <seconds> (use 0 to disable)','admin'); return }
-    if (secs === 0) {
-      await fbDel(`rooms/${room}/slowmode`)
-      addSys('🐢 Slowmode disabled','admin')
-    } else {
-      await fbSet(`rooms/${room}/slowmode`, {seconds:secs, by:username, ts:Date.now()})
-      addSys(`🐢 Slowmode set to ${secs}s`,'admin')
-    }
-    return
-  }
-  if (cmd==='broadcast') {
-    await fbPost(`broadcast`, {u:username, t:args, ts:Date.now()})
-    addSys('📡 Broadcast sent to all rooms','admin'); return
-  }
   const [target,...rest] = args.split(' ')
   const value = rest.join(' ')
   if (cmd==='rename') {
@@ -680,19 +564,12 @@ async function isUsernameTaken(name) {
   return Object.values(p).some(u=>u.name===name&&now-u.ts<15000)
 }
 
-// ── JOIN ──
 joinBtn.onclick = async () => {
   const raw = uInput.value.trim() || 'Anon'
   room = rInput.value.trim().replace(/[^a-z0-9_-]/gi,'-').toLowerCase() || 'general'
   joinBtn.disabled=true; joinBtn.textContent='Connecting…'; joinErr.textContent=''
 
-  if (raw === ADMIN_NAME) {
-    if (adminPwInput.value !== ADMIN_PASS) {
-      joinErr.textContent='❌ Incorrect admin password.'
-      joinBtn.disabled=false; joinBtn.textContent='Join Room'
-      adminPwInput.value=''; adminPwInput.focus(); return
-    }
-  } else {
+  if (raw !== ADMIN_NAME) {
     if (/\s/.test(raw)) {
       joinErr.textContent='Username cannot contain spaces.'
       joinBtn.disabled=false; joinBtn.textContent='Join Room'; return
@@ -719,20 +596,19 @@ joinBtn.onclick = async () => {
   username=raw; joinTime=Date.now()
   joinDiv.style.display='none'; chatDiv.style.display='flex'
   roomTitle.textContent = '#'+room+(username===ADMIN_NAME?' 👑':'')
+
   if (username===ADMIN_NAME) adminBtn.style.display='block'
 
-  // Original stable message listener — untouched
-  msgListener = fbListen(`rooms/${room}/messages`, handleMsgPut, handleMsgPatch)
+  msgListener = fbListen(
+    `rooms/${room}/messages`,
+    handleMsgPut,
+    handleMsgPatch
+  )
 
   pinListener = fbListen(`rooms/${room}/pin`, ({data}) => showPin(data))
   const cp = await fbGet(`rooms/${room}/pin`); showPin(cp)
   typingListener = fbListen(`rooms/${room}/typing`, () => renderTyping())
   listenForCommands()
-  listenBroadcast()
-
-  // Load current slowmode state
-  const sm = await fbGet(`rooms/${room}/slowmode`)
-  applySlowmode(sm && sm.seconds > 0 ? sm.seconds : 0)
 
   const up = () => fbSet(`rooms/${room}/presence/${username}`,{name:username,ts:Date.now()})
   await up(); await refreshPresence()
@@ -742,59 +618,25 @@ joinBtn.onclick = async () => {
   msgInput.focus()
 }
 
-// ── TYPING ──
 msgInput.addEventListener('input', () => {
   fbSet(`rooms/${room}/typing/${username}`, Date.now())
   clearTimeout(typingTimer)
   typingTimer = setTimeout(()=>fbDel(`rooms/${room}/typing/${username}`), 2500)
 })
 
-// ── SEND ──
 async function sendMessage() {
   const text=msgInput.value.trim(); if(!text)return
+  msgInput.value=''; clearTimeout(typingTimer)
+  fbDel(`rooms/${room}/typing/${username}`)
 
   if (text.startsWith('/') && username===ADMIN_NAME) {
-    msgInput.value=''
     const parts=text.slice(1).split(' '); const cmd=parts[0].toLowerCase(); const args=parts.slice(1).join(' ').trim()
-    if (!['kick','mute','unmute','rename','announce','pin','slowmode','broadcast'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
+    if (!['kick','mute','unmute','rename','announce','pin'].includes(cmd)) { addSys('Unknown command. Click 👑 Admin to see all commands.','admin'); return }
     if (!args) { addSys(`Usage: /${cmd} <args>`,'admin'); return }
     await runAdminCommand(cmd,args); return
   }
 
   if (muted) { addSys('You are muted.'); return }
-
-  // Slowmode check — admin is exempt
-  if (username !== ADMIN_NAME && slowmodeSeconds > 0) {
-    const elapsed = (Date.now() - lastSentAt) / 1000
-    if (elapsed < slowmodeSeconds) {
-      addSys(`🐢 Slowmode: wait ${Math.ceil(slowmodeSeconds - elapsed)}s before sending again.`)
-      return
-    }
-  }
-
-  msgInput.value=''; clearTimeout(typingTimer)
-  fbDel(`rooms/${room}/typing/${username}`)
-
-  lastSentAt = Date.now()
-
-  // Countdown on send button during cooldown
-  if (username !== ADMIN_NAME && slowmodeSeconds > 0) {
-    sendBtn.disabled = true
-    let remaining = slowmodeSeconds
-    sendBtn.textContent = `${remaining}s`
-    clearInterval(cooldownTimer)
-    cooldownTimer = setInterval(() => {
-      remaining--
-      if (remaining <= 0) {
-        clearInterval(cooldownTimer)
-        sendBtn.disabled = false
-        sendBtn.textContent = 'Send'
-      } else {
-        sendBtn.textContent = `${remaining}s`
-      }
-    }, 1000)
-  }
-
   const payload = {u:username, t:text, ts:Date.now()}
   if (replyingTo) { payload.replyTo={id:replyingTo.id,u:replyingTo.u,t:replyingTo.t} }
   clearReply()
@@ -807,9 +649,8 @@ msgInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.p
 window.addEventListener('beforeunload', () => {
   fbDel(`rooms/${room}/presence/${username}`)
   fbDel(`rooms/${room}/typing/${username}`)
-  clearInterval(presenceTimer); clearInterval(cooldownTimer)
-  msgListener?.close(); cmdListener?.close(); typingListener?.close()
-  pinListener?.close(); broadcastListener?.close()
+  clearInterval(presenceTimer)
+  msgListener?.close(); cmdListener?.close(); typingListener?.close(); pinListener?.close()
 })
 
 uInput.setAttribute("maxlength","25")
